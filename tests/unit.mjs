@@ -72,6 +72,14 @@ console.log('1) Grammar rule engine');
   const fixSp = engine.localGrade('It was intresting.', 'writing');
   ok('misspelling is corrected', fixSp.corrected_text.includes('interesting'), fixSp.corrected_text);
 
+  // overlapping rules must compose, not overwrite one another
+  const chained = engine.localGrade("I didn't saw nobody.", 'writing');
+  ok('chained fixes compose correctly', chained.corrected_text.includes("didn't see anybody"), chained.corrected_text);
+  const multi = engine.localGrade('yesterday i buyed a intresting book.', 'writing');
+  ok('multiple fixes all land in the output',
+     multi.corrected_text.includes('bought') && multi.corrected_text.includes('interesting') && multi.corrected_text.startsWith('Yesterday'),
+     multi.corrected_text);
+
   const clean = engine.localGrade('I went to the park yesterday and met my friend.', 'writing');
   ok('clean sentence scores high', clean.score >= 85, `score ${clean.score}`);
   ok('clean sentence marked correct', clean.is_correct === true);

@@ -73,8 +73,13 @@ export function localGrade(text: string, skill: SkillKind = 'writing'): LocalGra
   const errors: (Correction & { skill: SkillKind })[] = [];
   const seen = new Set<string>();
 
+  // Rules are applied cumulatively: each rule matches against the text
+  // produced by the previous ones, so overlapping fixes compose correctly
+  // (e.g. "didn't saw nobody" -> "didn't see nobody" -> "didn't see anybody")
+  // instead of each rule reinstating stale text from the original.
   for (const rule of RULES) {
-    const matches = Array.from(original.matchAll(rule.re));
+    rule.re.lastIndex = 0;
+    const matches = Array.from(corrected.matchAll(rule.re));
     for (const m of matches) {
       const right = rule.fix(m);
       if (right.toLowerCase() === m[0].toLowerCase()) continue;
