@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import VocabReview from '@/components/VocabReview';
 import { Empty } from '@/components/ui';
 import type { VocabularyMemory } from '@/types/db';
+import { nowIso } from '@/utils/dates';
 
 export const metadata = { title: 'مرور لغات | زبان‌یار' };
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export default async function VocabularyPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const now = new Date().toISOString();
+  const now = nowIso();
 
   const [{ data: due }, { count: total }, { count: mastered }] = await Promise.all([
     supabase.from('vocabulary_memory').select('*')

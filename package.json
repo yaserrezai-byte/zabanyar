@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:unit": "node tests/unit.mjs",
+    "test:rls": "node tests/rls.mjs",
+    "test:prod": "node tests/prod.mjs",
+    "test": "node tests/unit.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

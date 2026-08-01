@@ -6,6 +6,7 @@ import CoachPanel from '@/components/CoachPanel';
 import SkillRadar from '@/components/SkillRadar';
 import GenerateLessonButton from '@/components/GenerateLessonButton';
 import { SKILL_FA, SKILL_ICON, type Profile, type SkillKind } from '@/types/db';
+import { daysAgo, nowIso, today } from '@/utils/dates';
 
 export const metadata = { title: 'داشبورد | زبان‌یار' };
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,10 @@ export default async function DashboardPage() {
       supabase.from('lessons').select('id, title_fa, title, skill, level, est_minutes, created_at')
         .eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
       supabase.from('vocabulary_memory').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).lte('next_review_at', new Date().toISOString()),
+        .eq('user_id', user.id).lte('next_review_at', nowIso()),
       supabase.from('learning_history').select('xp, duration_sec, occurred_on')
         .eq('user_id', user.id)
-        .gte('occurred_on', new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)),
+        .gte('occurred_on', daysAgo(7)),
       supabase.from('mistakes_memory').select('error_tag, error_label_fa, occurrences, skill')
         .eq('user_id', user.id).eq('resolved', false)
         .order('occurrences', { ascending: false }).limit(5),
@@ -56,7 +57,7 @@ export default async function DashboardPage() {
   const assignCount = assignRes.count ?? 0;
   const todayMin = Math.round(
     history
-      .filter((h) => h.occurred_on === new Date().toISOString().slice(0, 10))
+      .filter((h) => h.occurred_on === today())
       .reduce((s, h) => s + (h.duration_sec ?? 0), 0) / 60
   );
 

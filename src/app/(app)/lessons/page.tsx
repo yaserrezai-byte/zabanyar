@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Card, Empty, LevelBadge, SectionTitle } from '@/components/ui';
+import { Card, Empty, LevelBadge } from '@/components/ui';
 import GenerateLessonButton from '@/components/GenerateLessonButton';
 import { SKILL_FA, SKILL_ICON, type SkillKind } from '@/types/db';
 

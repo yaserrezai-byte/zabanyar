@@ -4,6 +4,7 @@ import { Card, Empty, LevelBadge, Progress, SectionTitle, Stat } from '@/compone
 import ActivityChart from '@/components/ActivityChart';
 import SkillRadar from '@/components/SkillRadar';
 import { SKILL_FA, SKILL_ICON, type Profile, type SkillKind } from '@/types/db';
+import { lastNDays } from '@/utils/dates';
 
 export const metadata = { title: 'گزارش پیشرفت | زبان‌یار' };
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,8 @@ export default async function ProgressPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const since = new Date(Date.now() - 29 * 864e5).toISOString().slice(0, 10);
+  const days = lastNDays(30);
+  const since = days[0];
 
   const [{ data: profile }, { data: skills }, { data: history }, { data: mistakes }, { count: vocabTotal }, { count: vocabMastered }] =
     await Promise.all([
@@ -44,10 +46,7 @@ export default async function ProgressPage() {
 
   // aggregate by day
   const byDay = new Map<string, { xp: number; minutes: number }>();
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
-    byDay.set(d, { xp: 0, minutes: 0 });
-  }
+  for (const d of days) byDay.set(d, { xp: 0, minutes: 0 });
   for (const e of h) {
     const cur = byDay.get(e.occurred_on);
     if (cur) {
@@ -66,7 +65,6 @@ export default async function ProgressPage() {
   const avgAcc = accuracies.length
     ? Math.round(accuracies.reduce((a, b) => a + b, 0) / accuracies.length)
     : 0;
-  const lessonsDone = h.filter((e) => e.event_type === 'lesson_completed').length;
   const activeDays = chartData.filter((d) => d.minutes > 0).length;
 
   return (
