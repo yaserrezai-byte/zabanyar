@@ -165,6 +165,8 @@ export const ERROR_LABELS_FA: Record<string, string> = {
   inference: 'استنباط از متن',
   concession: 'جملات امتیازی',
   vowel_sounds: 'صداهای مصوت',
+  irregular_verb: 'افعال بی‌قاعده',
+  double_negative: 'منفی مضاعف',
 };
 
 // ------------------------------------------------------------

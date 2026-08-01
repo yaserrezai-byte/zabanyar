@@ -53,6 +53,11 @@ console.log('1) Grammar rule engine');
     { text: 'Please explain me this.', tag: 'word_order' },
     { text: 'I recieve the letter.', tag: 'spelling' },
     { text: 'They is happy.', tag: 'verb_to_be' },
+    { text: 'I buyed a book yesterday.', tag: 'irregular_verb' },
+    { text: 'She readed the letter.', tag: 'irregular_verb' },
+    { text: 'It was very intresting.', tag: 'spelling' },
+    { text: "I didn't saw nobody there.", tag: 'double_negative' },
+    { text: 'He goed to the market.', tag: 'irregular_verb' },
   ];
 
   for (const c of cases) {
@@ -60,6 +65,12 @@ console.log('1) Grammar rule engine');
     const tags = r.errors.map((e) => e.error_tag);
     ok(`detects ${c.tag.padEnd(24)} in "${c.text.slice(0, 30)}"`, tags.includes(c.tag), `got [${tags.join(', ')}]`);
   }
+
+  // corrections must actually fix the text
+  const fixIrr = engine.localGrade('I buyed a book.', 'writing');
+  ok('irregular verb is corrected to "bought"', fixIrr.corrected_text.includes('bought'), fixIrr.corrected_text);
+  const fixSp = engine.localGrade('It was intresting.', 'writing');
+  ok('misspelling is corrected', fixSp.corrected_text.includes('interesting'), fixSp.corrected_text);
 
   const clean = engine.localGrade('I went to the park yesterday and met my friend.', 'writing');
   ok('clean sentence scores high', clean.score >= 85, `score ${clean.score}`);

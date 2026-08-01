@@ -112,7 +112,7 @@ export default function LessonExercises({
                       style={{ borderColor, background }}
                       dir="ltr"
                     >
-                      <span className="num ml-2 font-bold opacity-50">
+                      <span className="num mr-2 font-bold opacity-50">
                         {String.fromCharCode(65 + i)}.
                       </span>
                       {opt}
