@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.zabanyar.twa",
+      "sha256_cert_fingerprints": [
+        "A3:68:C6:4C:07:33:95:86:0E:29:E8:83:B4:AD:A7:80:4C:D5:DB:9B:8F:AE:DF:CA:E2:79:16:EA:11:FA:BD:0C"
+      ]
+    }
+  }
+]
