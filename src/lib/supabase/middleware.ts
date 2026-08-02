@@ -1,7 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/', '/login', '/signup', '/auth', '/api/health'];
+const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/signup',
+  '/auth',
+  '/api/health',
+  // PWA surfaces must resolve without a session, otherwise service
+  // worker registration and the install prompt fail for logged-out users.
+  '/offline',
+  '/manifest.json',
+  '/sw.js',
+];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
