@@ -29,6 +29,7 @@ export type AssignmentStatus =
   | 'skipped';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 export type SubscriptionTier = 'free' | 'pro' | 'premium';
+export type TranscriptSource = 'service' | 'browser' | 'heuristic';
 
 export const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -323,4 +324,37 @@ export interface AiMemory {
   key: string;
   value: string;
   weight: number;
+}
+
+export interface PronunciationWordScore {
+  target: string;
+  heard: string | null;
+  score: number;
+  status: 'correct' | 'close' | 'wrong' | 'missing' | 'extra';
+  hint_fa?: string;
+}
+
+export interface PronunciationFeedback {
+  words?: PronunciationWordScore[];
+  strengths_fa?: string[];
+  improvements_fa?: string[];
+  problem_words?: string[];
+  feedback_fa?: string;
+  coverage?: number;
+  confident?: boolean;
+}
+
+export interface PronunciationAttempt {
+  id: string;
+  user_id: string;
+  target_text: string;
+  transcript: string | null;
+  accuracy_score: number;
+  phoneme_feedback: PronunciationFeedback;
+  audio_path: string | null;
+  level: CefrLevel | null;
+  duration_ms: number | null;
+  source: TranscriptSource;
+  used_fallback: boolean;
+  created_at: string;
 }

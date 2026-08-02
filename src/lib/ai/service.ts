@@ -6,7 +6,13 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CefrLevel, Correction, SkillKind, VocabSeed } from '@/types/db';
-import { AI_ENABLED, chatJson, type ChatMessage } from './provider';
+import {
+  AI_ENABLED,
+  SPEECH_ENABLED,
+  chatJson,
+  transcribeAudio,
+  type ChatMessage,
+} from './provider';
 import {
   COACH_SYSTEM,
   GRADER_SYSTEM,
@@ -15,6 +21,11 @@ import {
   type LearnerContext,
 } from './prompts';
 import { localCoach, localGrade, localLesson, localReply } from './local-engine';
+import {
+  scoreFromDuration,
+  scoreTranscript,
+  type PronunciationScore,
+} from './pronunciation-engine';
 
 // ------------------------------------------------------------
 // Build learner memory context from the database
@@ -334,4 +345,68 @@ export async function coachAdvice(
     }
   }
   return { ...localCoach(ctx), source: 'local' };
+}
+
+// ------------------------------------------------------------
+// Pronunciation
+// ------------------------------------------------------------
+
+export interface PronunciationResult extends PronunciationScore {
+  /** Where the transcript came from. */
+  source: 'service' | 'browser' | 'heuristic';
+  /** true when the local engine produced the score, not a speech service. */
+  used_fallback: boolean;
+}
+
+/**
+ * Transcribe an utterance and score it against the target sentence.
+ *
+ * Resolution order, degrading gracefully at every step:
+ *   1. Server-side STT provider (SPEECH_API_KEY / OPENAI_API_KEY)
+ *   2. A transcript the browser already produced on-device (free)
+ *   3. Duration-only heuristic, flagged as not confident
+ *
+ * Never throws: a misconfigured or failing provider always lands on
+ * the local engine, matching the rest of the AI layer.
+ */
+export async function transcribeAndScore(
+  targetText: string,
+  audio: { data: Buffer; mimeType: string } | null,
+  opts: { browserTranscript?: string; durationMs?: number } = {}
+): Promise<PronunciationResult> {
+  // ---- 1. server-side speech service ----
+  if (SPEECH_ENABLED && audio) {
+    try {
+      const { text } = await transcribeAudio(audio.data, {
+        mimeType: audio.mimeType,
+        language: 'en',
+        // Priming with the target improves accuracy on accented speech.
+        prompt: targetText,
+      });
+      return {
+        ...scoreTranscript(targetText, text),
+        source: 'service',
+        used_fallback: false,
+      };
+    } catch (err) {
+      console.error('[ai] transcribeAndScore fallback:', err);
+    }
+  }
+
+  // ---- 2. transcript captured on-device by the browser ----
+  const browser = opts.browserTranscript?.trim();
+  if (browser) {
+    return {
+      ...scoreTranscript(targetText, browser),
+      source: 'browser',
+      used_fallback: true,
+    };
+  }
+
+  // ---- 3. nothing to compare against ----
+  return {
+    ...scoreFromDuration(targetText, opts.durationMs ?? 0),
+    source: 'heuristic',
+    used_fallback: true,
+  };
 }

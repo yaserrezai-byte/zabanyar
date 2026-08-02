@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/lessons', label: 'درس‌ها', icon: '📚' },
   { href: '/tutor', label: 'مربی هوشمند', icon: '💬' },
   { href: '/vocabulary', label: 'مرور لغات', icon: '🔁' },
+  { href: '/pronunciation', label: 'تمرین تلفظ', icon: '🎤' },
   { href: '/assignments', label: 'تکالیف', icon: '✍️' },
   { href: '/progress', label: 'پیشرفت', icon: '📈' },
 ];

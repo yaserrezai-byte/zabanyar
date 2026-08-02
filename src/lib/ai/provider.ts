@@ -16,6 +16,20 @@ const BASE_URL =
   process.env.OPENAI_BASE_URL?.replace(/\/$/, '') || 'https://api.openai.com/v1';
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
+// ---- Speech-to-text ----------------------------------------
+// Falls back to the chat credentials so a single OPENAI_API_KEY is
+// enough, but can be pointed at a dedicated STT provider.
+const SPEECH_KEY = process.env.SPEECH_API_KEY || process.env.OPENAI_API_KEY;
+const SPEECH_BASE_URL = (
+  process.env.SPEECH_BASE_URL ||
+  process.env.OPENAI_BASE_URL ||
+  'https://api.openai.com/v1'
+).replace(/\/$/, '');
+const SPEECH_MODEL = process.env.SPEECH_MODEL || 'whisper-1';
+
+/** True when a server-side speech-to-text provider is configured. */
+export const SPEECH_ENABLED = Boolean(SPEECH_KEY);
+
 export class AiUnavailableError extends Error {
   constructor(message = 'AI provider is not configured') {
     super(message);
@@ -83,4 +97,67 @@ export async function chatJson<T>(
   const data = await res.json();
   const raw = data?.choices?.[0]?.message?.content ?? '{}';
   return JSON.parse(raw) as T;
+}
+
+// ============================================================
+// Speech-to-text
+// ============================================================
+
+export interface TranscriptionResult {
+  text: string;
+  /** Provider-reported language, when available. */
+  language?: string;
+  /** Provider-reported audio duration in seconds, when available. */
+  duration?: number;
+}
+
+/**
+ * Transcribe audio through an OpenAI-compatible `/audio/transcriptions`
+ * endpoint (Whisper and most drop-in replacements implement this).
+ *
+ * Throws AiUnavailableError when no speech key is configured, and a
+ * plain Error on transport/HTTP failure — callers are expected to
+ * catch and fall back to the local engine, exactly like chatJson().
+ */
+export async function transcribeAudio(
+  audio: Blob | Buffer | Uint8Array,
+  opts: { filename?: string; mimeType?: string; language?: string; prompt?: string } = {}
+): Promise<TranscriptionResult> {
+  if (!SPEECH_ENABLED) throw new AiUnavailableError('Speech provider is not configured');
+
+  const mime = opts.mimeType || 'audio/webm';
+  const filename = opts.filename || `speech.${mime.split('/')[1]?.split(';')[0] || 'webm'}`;
+
+  const blob =
+    audio instanceof Blob
+      ? audio
+      : new Blob([audio as unknown as BlobPart], { type: mime });
+
+  const form = new FormData();
+  form.append('file', blob, filename);
+  form.append('model', SPEECH_MODEL);
+  // Bias the decoder towards English so Persian-accented speech is
+  // transcribed as English words rather than transliterated.
+  form.append('language', opts.language ?? 'en');
+  form.append('response_format', 'json');
+  if (opts.prompt) form.append('prompt', opts.prompt);
+
+  const res = await fetch(`${SPEECH_BASE_URL}/audio/transcriptions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${SPEECH_KEY}` },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(
+      `Speech request failed (${res.status}): ${detail.slice(0, 300)}`
+    );
+  }
+
+  const data = await res.json();
+  const text = typeof data?.text === 'string' ? data.text.trim() : '';
+  if (!text) throw new Error('Speech provider returned an empty transcript');
+
+  return { text, language: data?.language, duration: data?.duration };
 }

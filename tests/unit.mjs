@@ -36,6 +36,7 @@ console.log('\n🧪 زبان‌یار — Unit tests\n');
 
 const engine = await load('src/lib/ai/local-engine.ts');
 const bank = await load('src/lib/ai/placement-bank.ts');
+const pron = await load('src/lib/ai/pronunciation-engine.ts');
 
 // ------------------------------------------------------------
 console.log('1) Grammar rule engine');
@@ -270,6 +271,120 @@ console.log('\n8) Level helpers');
   ok('levelIndex C2 = 5', engine.levelIndex('C2') === 5);
   ok('nextLevel B1 → B2', engine.nextLevel('B1') === 'B2');
   ok('nextLevel C2 stays C2', engine.nextLevel('C2') === 'C2');
+}
+
+// ------------------------------------------------------------
+console.log('\n9) Pronunciation scoring engine');
+{
+  // ---- phonetic normalisation ----
+  ok('phoneticKey collapses spelling variants',
+     pron.phoneticKey('colour') === pron.phoneticKey('color'),
+     `${pron.phoneticKey('colour')} vs ${pron.phoneticKey('color')}`);
+  ok('phoneticKey folds ph → f',
+     pron.phoneticKey('phone') === pron.phoneticKey('fone'));
+  ok('phoneticKey ignores case and punctuation',
+     pron.phoneticKey('Hello!') === pron.phoneticKey('hello'));
+  ok('phoneticKey handles an empty string', pron.phoneticKey('!!!') === '');
+
+  // ---- levenshtein / similarity ----
+  ok('levenshtein of identical strings is 0', pron.levenshtein('abc', 'abc') === 0);
+  ok('levenshtein counts a single substitution', pron.levenshtein('cat', 'cot') === 1);
+  ok('levenshtein handles empty input', pron.levenshtein('', 'abc') === 3);
+  ok('similarity is 1 for identical strings', pron.similarity('word', 'word') === 1);
+  ok('similarity is 0..1 bounded',
+     (() => { const v = pron.similarity('abc', 'xyz'); return v >= 0 && v <= 1; })());
+
+  // ---- perfect utterance ----
+  const perfect = pron.scoreTranscript('Good morning', 'Good morning');
+  ok('identical transcript scores 100', perfect.accuracy_score === 100, `${perfect.accuracy_score}`);
+  ok('every word marked correct', perfect.words.every((w) => w.status === 'correct'));
+  ok('coverage is complete', perfect.coverage === 1);
+  ok('marked confident', perfect.confident === true);
+  ok('feedback is Persian', /[\u0600-\u06FF]/.test(perfect.feedback_fa));
+
+  // ---- case and punctuation must not be penalised ----
+  const casing = pron.scoreTranscript('Good morning, how are you?', 'good morning how are you');
+  ok('case/punctuation differences do not penalise', casing.accuracy_score === 100, `${casing.accuracy_score}`);
+
+  // ---- completely wrong ----
+  const wrong = pron.scoreTranscript('Good morning', 'purple elephant');
+  ok('unrelated speech scores low', wrong.accuracy_score < 40, `${wrong.accuracy_score}`);
+  ok('problem words are reported', wrong.problem_words.length > 0);
+
+  // ---- partial utterance ----
+  const partial = pron.scoreTranscript('I have three books and two pens', 'I have three books');
+  ok('missing words are detected', partial.words.some((w) => w.status === 'missing'));
+  ok('coverage drops below 1', partial.coverage < 1, `${partial.coverage}`);
+  ok('partial beats unrelated', partial.accuracy_score > wrong.accuracy_score);
+  ok('partial is below perfect', partial.accuracy_score < 100);
+
+  // ---- extra words penalised ----
+  const extra = pron.scoreTranscript('Good morning', 'Good morning umm well okay so');
+  ok('extra words are flagged', extra.words.some((w) => w.status === 'extra'));
+  ok('extra words reduce the score', extra.accuracy_score < perfect.accuracy_score,
+     `${extra.accuracy_score} vs ${perfect.accuracy_score}`);
+
+  // ---- near-miss pronunciation stays generous ----
+  const near = pron.scoreTranscript('I think this is right', 'I sink dis is right');
+  ok('accented near-miss still scores partially', near.accuracy_score > 40, `${near.accuracy_score}`);
+  ok('accented near-miss is not perfect', near.accuracy_score < 100);
+
+  // ---- Persian-speaker hints ----
+  const thCase = pron.scoreTranscript('think', 'sink');
+  ok('th hint surfaces for Persian speakers',
+     thCase.words.some((w) => (w.hint_fa || '').includes('th')),
+     JSON.stringify(thCase.words.map((w) => w.hint_fa)));
+
+  // ---- word order matters ----
+  const jumbled = pron.scoreTranscript('the cat sat on the mat', 'mat the on sat cat the');
+  ok('scrambled word order is penalised', jumbled.accuracy_score < 90, `${jumbled.accuracy_score}`);
+
+  // ---- structural guarantees ----
+  ok('score never exceeds 100', perfect.accuracy_score <= 100);
+  ok('score never goes below 0', wrong.accuracy_score >= 0);
+  ok('empty target is handled safely', pron.scoreTranscript('', 'hello').accuracy_score === 0);
+  ok('empty transcript is handled safely',
+     (() => { const r = pron.scoreTranscript('hello world', ''); return r.accuracy_score === 0 && r.words.length > 0; })());
+  ok('all words carry a numeric score', perfect.words.every((w) => typeof w.score === 'number'));
+  ok('strengths and improvements are always present',
+     perfect.strengths_fa.length > 0 && perfect.improvements_fa.length > 0);
+  ok('improvements are Persian',
+     wrong.improvements_fa.every((s) => /[\u0600-\u06FF]/.test(s)));
+
+  // ---- duration-only fallback ----
+  const tooShort = pron.scoreFromDuration('I have three books and two pens', 200);
+  ok('very short recording is flagged as not confident', tooShort.confident === false);
+  ok('very short recording scores low', tooShort.accuracy_score <= 40, `${tooShort.accuracy_score}`);
+  ok('short-recording feedback is Persian', /[\u0600-\u06FF]/.test(tooShort.feedback_fa));
+
+  const plausible = pron.scoreFromDuration('I have three books', 1600);
+  ok('plausible duration scores higher than too-short',
+     plausible.accuracy_score > tooShort.accuracy_score);
+  ok('duration fallback never claims confidence', plausible.confident === false);
+  ok('duration fallback returns no transcript', plausible.transcript === '');
+
+  const tooLong = pron.scoreFromDuration('Hello', 40000);
+  ok('over-long recording is penalised', tooLong.accuracy_score < plausible.accuracy_score,
+     `${tooLong.accuracy_score} vs ${plausible.accuracy_score}`);
+
+  // ---- sentence bank ----
+  ok('sentence bank is populated', pron.SENTENCE_BANK.length >= 20, `${pron.SENTENCE_BANK.length}`);
+  ok('all sentence ids are unique',
+     new Set(pron.SENTENCE_BANK.map((s) => s.id)).size === pron.SENTENCE_BANK.length);
+  ok('every sentence has a Persian translation',
+     pron.SENTENCE_BANK.every((s) => /[\u0600-\u06FF]/.test(s.translation_fa)));
+  ok('every sentence has a Persian focus label',
+     pron.SENTENCE_BANK.every((s) => /[\u0600-\u06FF]/.test(s.focus_fa)));
+  ok('every sentence has English text',
+     pron.SENTENCE_BANK.every((s) => /[a-zA-Z]/.test(s.text)));
+  ok('all six CEFR levels are covered',
+     new Set(pron.SENTENCE_BANK.map((s) => s.level)).size === 6);
+
+  for (const lv of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+    const list = pron.sentencesForLevel(lv);
+    ok(`sentencesForLevel(${lv}) returns options`, list.length >= 3, `${list.length}`);
+  }
+  ok('sentencesForLevel(null) is safe', pron.sentencesForLevel(null).length >= 3);
 }
 
 console.log(`\n${'='.repeat(50)}`);

@@ -58,6 +58,7 @@ console.log('1) Schema integrity');
     'profiles', 'skill_levels', 'placement_tests', 'lessons', 'exercises',
     'assignments', 'submissions', 'mistakes_memory', 'vocabulary_memory',
     'conversations', 'messages', 'learning_history', 'progress_reports', 'ai_memory',
+    'pronunciation_attempts',
   ];
   for (const t of tables) {
     const { error } = await admin.from(t).select('*').limit(1);
@@ -129,6 +130,7 @@ console.log('\n5) Per-table data isolation');
     ['learning_history', { user_id: alice.id, event_type: 'lesson_completed', xp: 10 }],
     ['ai_memory', { user_id: alice.id, kind: 'preference', key: 'topic', value: 'travel' }],
     ['progress_reports', { user_id: alice.id, period_start: '2026-07-01', period_end: '2026-07-31' }],
+    ['pronunciation_attempts', { user_id: alice.id, target_text: 'Good morning', accuracy_score: 88 }],
   ];
 
   for (const [table, row] of rows) {
@@ -297,10 +299,122 @@ console.log('\n11) Storage buckets');
 console.log('\n12) Anonymous access');
 {
   const anon = createClient(URL_, ANON, { auth: { persistSession: false } });
-  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory']) {
+  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory', 'pronunciation_attempts']) {
     const { data } = await anon.from(t).select('id').limit(1);
     ok(`anonymous read blocked on ${t.padEnd(18)}`, (data ?? []).length === 0);
   }
+}
+
+// ------------------------------------------------------------
+console.log('\n12b) Pronunciation attempts & speech audio');
+{
+  // ---- score + feedback round-trip ----
+  const { data: att, error: attErr } = await aDb
+    .from('pronunciation_attempts')
+    .insert({
+      user_id: alice.id,
+      target_text: 'I have been learning English for three years.',
+      transcript: 'I have been learning English for three years',
+      accuracy_score: 91.5,
+      phoneme_feedback: {
+        words: [{ target: 'learning', heard: 'learning', score: 100, status: 'correct' }],
+        strengths_fa: ['تلفظ روان بود.'],
+        improvements_fa: ['روی صدای th کار کنید.'],
+        confident: true,
+      },
+      level: 'B1',
+      duration_ms: 3200,
+      source: 'browser',
+      used_fallback: true,
+    })
+    .select('id, accuracy_score, phoneme_feedback')
+    .single();
+
+  ok('learner can record an attempt', !attErr, attErr?.message);
+  ok('score persists with 2-dp precision', Number(att?.accuracy_score) === 91.5, `${att?.accuracy_score}`);
+  ok('jsonb feedback round-trips', att?.phoneme_feedback?.confident === true);
+
+  // ---- isolation ----
+  const { data: bobSees } = await bDb.from('pronunciation_attempts').select('id').eq('id', att.id);
+  ok('another learner cannot read the attempt', (bobSees ?? []).length === 0);
+
+  const { data: bobList } = await bDb.from('pronunciation_attempts').select('id');
+  ok('attempt listing is scoped to self', (bobList ?? []).length === 0);
+
+  const { error: spoofErr } = await bDb.from('pronunciation_attempts').insert({
+    user_id: alice.id, target_text: 'spoofed', accuracy_score: 100,
+  });
+  ok('cannot record an attempt for another learner', !!spoofErr);
+
+  const { error: updErr } = await bDb
+    .from('pronunciation_attempts').update({ accuracy_score: 5 }).eq('id', att.id);
+  const { data: afterUpd } = await admin
+    .from('pronunciation_attempts').select('accuracy_score').eq('id', att.id).single();
+  ok("another learner cannot alter someone's score",
+     Number(afterUpd.accuracy_score) === 91.5, `err=${updErr?.message} score=${afterUpd.accuracy_score}`);
+
+  const { error: delErr } = await bDb.from('pronunciation_attempts').delete().eq('id', att.id);
+  const { data: afterDel } = await admin
+    .from('pronunciation_attempts').select('id').eq('id', att.id);
+  ok('another learner cannot delete the attempt',
+     (afterDel ?? []).length === 1, delErr?.message);
+
+  // ---- constraints ----
+  const { error: rangeErr } = await aDb.from('pronunciation_attempts').insert({
+    user_id: alice.id, target_text: 'out of range', accuracy_score: 150,
+  });
+  ok('accuracy_score above 100 is rejected', !!rangeErr);
+
+  const { error: negErr } = await aDb.from('pronunciation_attempts').insert({
+    user_id: alice.id, target_text: 'negative', accuracy_score: -3,
+  });
+  ok('negative accuracy_score is rejected', !!negErr);
+
+  const { error: srcErr } = await aDb.from('pronunciation_attempts').insert({
+    user_id: alice.id, target_text: 'bad source', accuracy_score: 50, source: 'telepathy',
+  });
+  ok('invalid transcript source is rejected', !!srcErr);
+
+  // ---- audio_path guard trigger (0004) ----
+  const { error: pathErr } = await aDb.from('pronunciation_attempts').insert({
+    user_id: alice.id,
+    target_text: 'stolen audio pointer',
+    accuracy_score: 70,
+    audio_path: `${bob.id}/not-mine.webm`,
+  });
+  ok("audio_path pointing at another user's folder is rejected", !!pathErr,
+     pathErr ? '' : 'trigger did not fire');
+
+  const { error: goodPathErr } = await aDb.from('pronunciation_attempts').insert({
+    user_id: alice.id,
+    target_text: 'my own audio',
+    accuracy_score: 70,
+    audio_path: `${alice.id}/mine.webm`,
+  });
+  ok('audio_path under the owner folder is accepted', !goodPathErr, goodPathErr?.message);
+
+  // ---- speech bucket object isolation ----
+  const wav = Buffer.from('RIFF....WAVEfmt placeholder', 'utf8');
+
+  const { error: upErr } = await aDb.storage
+    .from('speech').upload(`${alice.id}/attempt-rls.wav`, wav, { contentType: 'audio/wav', upsert: true });
+  ok('learner can upload into their own speech folder', !upErr, upErr?.message);
+
+  const { error: intrudeErr } = await bDb.storage
+    .from('speech').upload(`${alice.id}/intruder.wav`, wav, { contentType: 'audio/wav' });
+  ok("cannot upload into another learner's speech folder", !!intrudeErr);
+
+  const { data: bobDl, error: bobDlErr } = await bDb.storage
+    .from('speech').download(`${alice.id}/attempt-rls.wav`);
+  ok("cannot download another learner's audio", !!bobDlErr || !bobDl);
+
+  const { data: mineDl } = await aDb.storage.from('speech').download(`${alice.id}/attempt-rls.wav`);
+  ok('owner can download their own audio', !!mineDl);
+
+  const { data: bucket } = await admin.storage.getBucket('speech');
+  ok('speech bucket stays private', bucket?.public === false);
+
+  await admin.storage.from('speech').remove([`${alice.id}/attempt-rls.wav`]);
 }
 
 // ------------------------------------------------------------
@@ -312,6 +426,8 @@ console.log('\n13) Cascade cleanup');
   ok('profile removed with the user', (prof ?? []).length === 0);
   const { data: vocab } = await admin.from('vocabulary_memory').select('id').eq('user_id', alice.id);
   ok('child rows cascade-deleted', (vocab ?? []).length === 0);
+  const { data: pron } = await admin.from('pronunciation_attempts').select('id').eq('user_id', alice.id);
+  ok('pronunciation attempts cascade-deleted', (pron ?? []).length === 0);
 
   for (const id of created) {
     if (id !== alice.id) await admin.auth.admin.deleteUser(id).catch(() => {});
