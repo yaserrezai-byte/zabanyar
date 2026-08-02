@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, LevelBadge, Progress, Spinner, Stat } from '@/components/ui';
 import type { VocabularyMemory } from '@/types/db';
+import { announceBadges } from '@/lib/badge-events';
 
 const QUALITY = [
   { q: 0, label: 'بلد نبودم', emoji: '😰', color: '#f43f5e' },
@@ -34,11 +35,13 @@ export default function VocabReview({
     if (!current || saving) return;
     setSaving(true);
     try {
-      await fetch('/api/vocabulary/review', {
+      const res = await fetch('/api/vocabulary/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word_id: current.id, quality }),
       });
+      const payload = await res.json().catch(() => null);
+      announceBadges(payload?.new_badges);
     } catch (e) {
       console.error(e);
     }

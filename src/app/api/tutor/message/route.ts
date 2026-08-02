@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, recordMistakes, tutorReply } from '@/lib/ai/service';
+import { checkBadges } from '@/lib/gamification';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -113,7 +114,10 @@ export async function POST(req: Request) {
         : Promise.resolve(),
     ]);
 
+    const newBadges = await checkBadges(supabase, user.id);
+
     return Response.json({
+      new_badges: newBadges,
       conversation_id: convId,
       message_id: saved?.id,
       reply: result.reply,

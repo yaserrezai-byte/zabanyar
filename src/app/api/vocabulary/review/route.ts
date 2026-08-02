@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { sm2 } from '@/lib/ai/local-engine';
+import { checkBadges } from '@/lib/gamification';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,9 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    return Response.json({ ok: true, ...next });
+    const newBadges = await checkBadges(supabase, user.id);
+
+    return Response.json({ ok: true, ...next, new_badges: newBadges });
   } catch (e) {
     console.error('[vocabulary/review]', e);
     return serverError();

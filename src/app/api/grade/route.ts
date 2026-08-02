@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, gradeAnswer, recordMistakes } from '@/lib/ai/service';
+import { checkBadges } from '@/lib/gamification';
 import type { SkillKind } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +67,11 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    return Response.json({ submission_id: submission?.id, ...result });
+    // Gamification runs after the learning event is recorded and never
+    // blocks the response contract — checkBadges() swallows its errors.
+    const newBadges = await checkBadges(supabase, user.id);
+
+    return Response.json({ submission_id: submission?.id, ...result, new_badges: newBadges });
   } catch (e) {
     console.error('[grade]', e);
     return serverError();

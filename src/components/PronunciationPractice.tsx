@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { CefrLevel } from '@/types/db';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
+import { announceBadges } from '@/lib/badge-events';
 
 // ------------------------------------------------------------
 // Minimal typings for the Web Speech API (not in lib.dom yet)
@@ -255,6 +256,7 @@ export default function PronunciationPractice({
       if (!res.ok) throw new Error(data.error || 'خطا در تحلیل تلفظ');
 
       setResult(data as AttemptResult);
+      announceBadges(data.new_badges);
       onScored?.(data.accuracy_score);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'خطای نامشخص در تحلیل تلفظ');

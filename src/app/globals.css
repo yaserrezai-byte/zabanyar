@@ -119,3 +119,53 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ---------------- Gamification ---------------- */
+
+@keyframes badge-pop {
+  0%   { opacity: 0; transform: scale(.4) rotate(-12deg); }
+  55%  { opacity: 1; transform: scale(1.12) rotate(4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.badge-pop { animation: badge-pop .55s cubic-bezier(.34,1.56,.64,1) both; }
+
+@keyframes badge-shine {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.badge-shine {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(255 255 255 / .55) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: badge-shine 2.2s ease-in-out infinite;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+.toast-in { animation: toast-in .32s ease-out both; }
+
+@keyframes confetti-fall {
+  0%   { opacity: 1; transform: translateY(-8px) rotate(0); }
+  100% { opacity: 0; transform: translateY(120px) rotate(320deg); }
+}
+.confetti-bit {
+  position: absolute;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  animation: confetti-fall 1.5s ease-in forwards;
+}
+
+/* Locked badges read as inert without hiding their shape. */
+.badge-locked { filter: grayscale(1); opacity: .42; }
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-pop, .toast-in, .badge-shine, .confetti-bit { animation: none; }
+  .confetti-bit { display: none; }
+}

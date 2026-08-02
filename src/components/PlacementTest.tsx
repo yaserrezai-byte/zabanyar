@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Card, LevelBadge, Progress, Spinner } from '@/components/ui';
 import { SKILL_FA, SKILL_ICON, type CefrLevel, type SkillKind } from '@/types/db';
+import { announceBadges } from '@/lib/badge-events';
 
 interface Question {
   id: string;
@@ -77,6 +78,7 @@ export default function PlacementTest() {
       // brief pause to show the explanation
       setTimeout(() => {
         if (data.done) {
+          announceBadges(data.new_badges);
           setResult(data.result);
           setStage('done');
         } else {

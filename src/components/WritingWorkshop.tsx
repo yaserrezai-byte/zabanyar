@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { Assignment, SkillKind } from '@/types/db';
+import { announceBadges } from '@/lib/badge-events';
 
 const PROMPTS = [
   { fa: 'روز خود را توصیف کنید', en: 'Describe your day today. What did you do?' },
@@ -56,6 +57,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setResult(data);
+      announceBadges(data.new_badges);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'خطا در تصحیح');

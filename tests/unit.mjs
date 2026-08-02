@@ -37,6 +37,7 @@ console.log('\n🧪 زبان‌یار — Unit tests\n');
 const engine = await load('src/lib/ai/local-engine.ts');
 const bank = await load('src/lib/ai/placement-bank.ts');
 const pron = await load('src/lib/ai/pronunciation-engine.ts');
+const game = await load('src/lib/gamification.ts');
 
 // ------------------------------------------------------------
 console.log('1) Grammar rule engine');
@@ -385,6 +386,109 @@ console.log('\n9) Pronunciation scoring engine');
     ok(`sentencesForLevel(${lv}) returns options`, list.length >= 3, `${list.length}`);
   }
   ok('sentencesForLevel(null) is safe', pron.sentencesForLevel(null).length >= 3);
+}
+
+// ------------------------------------------------------------
+console.log('\n10) Gamification — badge criteria');
+{
+  const base = { ...game.EMPTY_STATS };
+  const S = (over) => ({ ...base, ...over });
+
+  // ---- measure() maps every criteria type ----
+  ok('measures total_xp', game.measure('total_xp', S({ totalXp: 450 })) === 450);
+  ok('measures streak', game.measure('streak', S({ streakDays: 9 })) === 9);
+  ok('measures vocab_reviewed', game.measure('vocab_reviewed', S({ vocabReviewed: 120 })) === 120);
+  ok('measures vocab_mastered', game.measure('vocab_mastered', S({ vocabMastered: 51 })) === 51);
+  ok('measures messages', game.measure('messages', S({ messages: 77 })) === 77);
+  ok('measures lessons_completed', game.measure('lessons_completed', S({ lessonsCompleted: 4 })) === 4);
+  ok('measures pronunciation_good', game.measure('pronunciation_good', S({ pronunciationGood: 21 })) === 21);
+  ok('measures flawless_streak', game.measure('flawless_streak', S({ flawlessStreak: 12 })) === 12);
+  ok('booleans surface as 1', game.measure('placement_done', S({ placementDone: true })) === 1);
+  ok('booleans surface as 0', game.measure('placement_done', S({ placementDone: false })) === 0);
+  ok('unknown type is 0, not NaN', game.measure('nonexistent_xyz', base) === 0);
+
+  // ---- the four badges named in the brief ----
+  const streak7 = { type: 'streak', threshold: 7 };
+  ok('هفت‌روزه: not earned at 6 days', !game.isEarned(streak7, S({ streakDays: 6 })));
+  ok('هفت‌روزه: earned at exactly 7', game.isEarned(streak7, S({ streakDays: 7 })));
+  ok('هفت‌روزه: still earned at 30', game.isEarned(streak7, S({ streakDays: 30 })));
+
+  const vocab1000 = { type: 'vocab_reviewed', threshold: 1000 };
+  ok('هزار لغت: not earned at 999', !game.isEarned(vocab1000, S({ vocabReviewed: 999 })));
+  ok('هزار لغت: earned at 1000', game.isEarned(vocab1000, S({ vocabReviewed: 1000 })));
+
+  const flawless10 = { type: 'flawless_streak', threshold: 10 };
+  ok('بدون خطا: not earned at 9', !game.isEarned(flawless10, S({ flawlessStreak: 9 })));
+  ok('بدون خطا: earned at 10', game.isEarned(flawless10, S({ flawlessStreak: 10 })));
+
+  const conv50 = { type: 'messages', threshold: 50 };
+  ok('مکالمه‌گر: not earned at 49', !game.isEarned(conv50, S({ messages: 49 })));
+  ok('مکالمه‌گر: earned at 50', game.isEarned(conv50, S({ messages: 50 })));
+
+  // ---- threshold defaults to 1 for boolean badges ----
+  ok('boolean badge needs no threshold',
+     game.isEarned({ type: 'placement_done' }, S({ placementDone: true })));
+  ok('boolean badge false when unmet',
+     !game.isEarned({ type: 'placement_done' }, S({ placementDone: false })));
+
+  // ---- empty stats earn nothing measurable ----
+  ok('fresh learner earns no threshold badge',
+     !game.isEarned(streak7, base) && !game.isEarned(vocab1000, base) && !game.isEarned(conv50, base));
+
+  // ---- progress ratio ----
+  ok('progress is 0.5 at half way',
+     game.progressRatio(streak7, S({ streakDays: 3.5 })) === 0.5);
+  ok('progress clamps at 1', game.progressRatio(streak7, S({ streakDays: 99 })) === 1);
+  ok('progress is 0 with no activity', game.progressRatio(streak7, base) === 0);
+  ok('progress never negative', game.progressRatio(streak7, S({ streakDays: -5 })) === 0);
+}
+
+// ------------------------------------------------------------
+console.log('\n11) Gamification — flawless run detection');
+{
+  const F = game.longestFlawlessRun;
+  const clean = (n) => Array.from({ length: n }, () => ({ errorCount: 0 }));
+  const dirty = { errorCount: 3 };
+
+  ok('empty history has no run', F([]) === 0);
+  ok('all-clean run counts fully', F(clean(10)) === 10);
+  ok('an error resets the run', F([...clean(4), dirty, ...clean(3)]) === 4);
+  ok('longest run wins, not the last', F([...clean(3), dirty, ...clean(8)]) === 8);
+  ok('leading error is ignored', F([dirty, ...clean(5)]) === 5);
+  ok('trailing error does not erase the run', F([...clean(6), dirty]) === 6);
+  ok('all dirty means zero', F([dirty, dirty, dirty]) === 0);
+  ok('single clean submission is a run of 1', F([{ errorCount: 0 }]) === 1);
+  // the badge boundary itself
+  ok('9 clean then error does NOT reach the 10 badge',
+     F([...clean(9), dirty]) < 10);
+  ok('10 clean reaches the badge', F(clean(10)) >= 10);
+}
+
+// ------------------------------------------------------------
+console.log('\n12) Gamification — streak computation');
+{
+  const C = game.computeStreak;
+  const at = (iso) => new Date(iso + 'T12:00:00Z');
+  const today = at('2026-08-02');
+
+  ok('no activity means no streak', C([], today) === 0);
+  ok('today alone is a 1-day streak', C(['2026-08-02'], today) === 1);
+  ok('yesterday alone still counts', C(['2026-08-01'], today) === 1);
+  ok('a two-day gap breaks the streak', C(['2026-07-30'], today) === 0);
+
+  ok('three consecutive days',
+     C(['2026-07-31', '2026-08-01', '2026-08-02'], today) === 3);
+  ok('seven consecutive days earns the badge',
+     C(['2026-07-27','2026-07-28','2026-07-29','2026-07-30','2026-07-31','2026-08-01','2026-08-02'], today) === 7);
+
+  ok('a gap truncates to the recent run',
+     C(['2026-07-20','2026-07-21','2026-08-01','2026-08-02'], today) === 2);
+  ok('duplicate dates count once',
+     C(['2026-08-02','2026-08-02','2026-08-01'], today) === 2);
+  ok('unsorted input is handled',
+     C(['2026-08-02','2026-07-31','2026-08-01'], today) === 3);
+  ok('stale history yields zero, not a stale streak',
+     C(['2026-06-01','2026-06-02','2026-06-03'], today) === 0);
 }
 
 console.log(`\n${'='.repeat(50)}`);

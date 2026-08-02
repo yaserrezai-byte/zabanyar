@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, Empty, LevelBadge, Progress, SectionTitle, Stat } from '@/components/ui';
 import ActivityChart from '@/components/ActivityChart';
+import BadgeShelf from '@/components/BadgeShelf';
 import SkillRadar from '@/components/SkillRadar';
 import { SKILL_FA, SKILL_ICON, type Profile, type SkillKind } from '@/types/db';
 import { lastNDays } from '@/utils/dates';
@@ -85,6 +86,8 @@ export default async function ProgressPage() {
         <Stat label="روزهای فعال" value={`${activeDays}/۳۰`} icon="📅" />
         <Stat label="لغات مسلط" value={`${vocabMastered ?? 0}/${vocabTotal ?? 0}`} icon="📖" />
       </div>
+
+      <BadgeShelf />
 
       <Card>
         <SectionTitle title="فعالیت روزانه" subtitle="دقیقه یادگیری در ۳۰ روز گذشته" />

@@ -58,7 +58,7 @@ console.log('1) Schema integrity');
     'profiles', 'skill_levels', 'placement_tests', 'lessons', 'exercises',
     'assignments', 'submissions', 'mistakes_memory', 'vocabulary_memory',
     'conversations', 'messages', 'learning_history', 'progress_reports', 'ai_memory',
-    'pronunciation_attempts',
+    'pronunciation_attempts', 'badges', 'user_badges',
   ];
   for (const t of tables) {
     const { error } = await admin.from(t).select('*').limit(1);
@@ -299,7 +299,7 @@ console.log('\n11) Storage buckets');
 console.log('\n12) Anonymous access');
 {
   const anon = createClient(URL_, ANON, { auth: { persistSession: false } });
-  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory', 'pronunciation_attempts']) {
+  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory', 'pronunciation_attempts', 'user_badges']) {
     const { data } = await anon.from(t).select('id').limit(1);
     ok(`anonymous read blocked on ${t.padEnd(18)}`, (data ?? []).length === 0);
   }
@@ -569,6 +569,154 @@ console.log('\n12c) Teacher panel — cross-teacher isolation');
 
   await admin.from('mistakes_memory').delete().eq('error_tag', 'articles_teacher_test');
   void subB;
+}
+
+// ------------------------------------------------------------
+console.log('\n12d) Gamification — badges & leaderboard privacy');
+{
+  const optIn  = await makeUser('optIn');
+  const optOut = await makeUser('optOut');
+
+  // Give both learners identical activity so only the opt-in flag differs.
+  const today = new Date().toISOString().slice(0, 10);
+  for (const u of [optIn, optOut]) {
+    await admin.from('learning_history').insert([
+      { user_id: u.id, event_type: 'lesson_completed', xp: 120, occurred_on: today },
+      { user_id: u.id, event_type: 'vocab_reviewed',   xp: 30,  occurred_on: today },
+    ]);
+  }
+
+  await admin.from('profiles').update({
+    show_on_leaderboard: true, display_name: 'قهرمان تست', current_level: 'B1',
+  }).eq('id', optIn.id);
+  await admin.from('profiles').update({
+    show_on_leaderboard: false, display_name: 'مخفی', current_level: 'B2',
+  }).eq('id', optOut.id);
+
+  const inDb  = await signIn(optIn);
+  const outDb = await signIn(optOut);
+
+  // ---- catalogue ----
+  const { data: cat } = await inDb.from('badges').select('code').eq('active', true);
+  ok('badge catalogue readable by learners', (cat ?? []).length >= 10, `${cat?.length}`);
+
+  const { error: catWrite } = await inDb.from('badges').insert({
+    code: 'hacked_badge', title_fa: 'نفوذ', description_fa: 'x',
+  });
+  ok('learner cannot add a badge to the catalogue', !!catWrite);
+
+  const { error: catEdit } = await inDb.from('badges')
+    .update({ title_fa: 'دستکاری' }).eq('code', 'streak_7');
+  const { data: stillOk } = await admin.from('badges').select('title_fa').eq('code', 'streak_7').single();
+  ok('learner cannot rename an existing badge',
+     stillOk.title_fa === 'هفت‌روزه', `err=${catEdit?.message}`);
+
+  // ---- awarding is server-side only ----
+  const { data: someBadge } = await admin.from('badges').select('id').eq('code', 'xp_10000').single();
+  const { error: selfAward } = await inDb.from('user_badges')
+    .insert({ user_id: optIn.id, badge_id: someBadge.id });
+  ok('learner CANNOT grant themselves a badge', !!selfAward, 'no INSERT policy must exist');
+
+  const { error: crossAward } = await inDb.from('user_badges')
+    .insert({ user_id: optOut.id, badge_id: someBadge.id });
+  ok('learner cannot grant a badge to someone else', !!crossAward);
+
+  // ---- award_badges() actually works and is idempotent ----
+  const { data: awarded1, error: awErr } = await inDb.rpc('award_badges', { target: null });
+  ok('award_badges() runs for the caller', !awErr, awErr?.message);
+  ok('  awarded at least one badge', (awarded1 ?? []).length >= 1, `${awarded1?.length}`);
+
+  const { data: awarded2 } = await inDb.rpc('award_badges', { target: null });
+  ok('  second call awards nothing (idempotent)', (awarded2 ?? []).length === 0, `${awarded2?.length}`);
+
+  const { data: mine } = await inDb.from('user_badges').select('badge_id').eq('user_id', optIn.id);
+  ok('  earned rows persisted', (mine ?? []).length >= 1);
+
+  const { error: forOther } = await inDb.rpc('award_badges', { target: optOut.id });
+  ok('cannot run award_badges() for another user', !!forOther);
+
+  // ---- earned badges are private ----
+  const { data: peek } = await outDb.from('user_badges').select('id').eq('user_id', optIn.id);
+  ok("another learner cannot read someone's badges", (peek ?? []).length === 0);
+
+  // ---- the seen flag may be flipped, the award may not be rewritten ----
+  const { data: row } = await admin.from('user_badges')
+    .select('id, badge_id, earned_at').eq('user_id', optIn.id).limit(1).single();
+  const { error: seenErr } = await inDb.from('user_badges')
+    .update({ seen: true }).eq('id', row.id);
+  ok('learner can mark their badge as seen', !seenErr, seenErr?.message);
+
+  await inDb.from('user_badges').update({ badge_id: someBadge.id }).eq('id', row.id);
+  const { data: after } = await admin.from('user_badges')
+    .select('badge_id, earned_at').eq('id', row.id).single();
+  ok('learner cannot swap which badge they hold', after.badge_id === row.badge_id);
+  ok('learner cannot backdate earned_at', after.earned_at === row.earned_at);
+
+  // ================= LEADERBOARD PRIVACY =================
+  const { data: board } = await inDb
+    .from('leaderboard_view').select('user_id, name, total_xp');
+
+  const ids = (board ?? []).map((r) => r.user_id);
+  ok('opted-in learner appears on the leaderboard', ids.includes(optIn.id));
+  ok('OPTED-OUT learner is absent from the leaderboard', !ids.includes(optOut.id),
+     'privacy requirement');
+
+  // ...and is invisible to everyone, including other viewers
+  const { data: boardAsOther } = await outDb
+    .from('leaderboard_view').select('user_id, name');
+  const otherIds = (boardAsOther ?? []).map((r) => r.user_id);
+  ok('opted-out learner cannot even see themselves listed', !otherIds.includes(optOut.id));
+  ok('  but still sees opted-in learners', otherIds.includes(optIn.id));
+
+  // no contact details leak
+  const cols = Object.keys((board ?? [])[0] ?? {});
+  const { data: full } = await inDb.from('leaderboard_view').select('*').limit(1).maybeSingle();
+  const fullCols = Object.keys(full ?? {});
+  ok('leaderboard exposes no email column', !fullCols.includes('email'), fullCols.join(','));
+  ok('leaderboard exposes no full_name column', !fullCols.includes('full_name'));
+  ok('leaderboard uses the display alias',
+     (board ?? []).find((r) => r.user_id === optIn.id)?.name === 'قهرمان تست');
+  void cols;
+
+  // opting out removes the learner immediately
+  await inDb.from('profiles').update({ show_on_leaderboard: false }).eq('id', optIn.id);
+  const { data: afterOptOut } = await inDb.from('leaderboard_view').select('user_id');
+  ok('opting out removes the learner at once',
+     !(afterOptOut ?? []).map((r) => r.user_id).includes(optIn.id));
+
+  // a learner may only change their OWN visibility
+  await inDb.from('profiles').update({ show_on_leaderboard: true }).eq('id', optIn.id);
+  await outDb.from('profiles').update({ show_on_leaderboard: true }).eq('id', optIn.id);
+  const { data: victim } = await admin.from('profiles')
+    .select('show_on_leaderboard').eq('id', optOut.id).single();
+  ok('learner cannot force someone else onto the leaderboard',
+     victim.show_on_leaderboard === false);
+
+  // ---- streak trigger (0006 fixed a column nothing maintained) ----
+  const fresh = await makeUser('streaker');
+  const d = (n) => {
+    const x = new Date(); x.setUTCDate(x.getUTCDate() - n);
+    return x.toISOString().slice(0, 10);
+  };
+  for (const back of [2, 1, 0]) {
+    await admin.from('learning_history').insert({
+      user_id: fresh.id, event_type: 'lesson_completed', xp: 10, occurred_on: d(back),
+    });
+  }
+  const { data: streaked } = await admin.from('profiles')
+    .select('streak_days, last_active_on').eq('id', fresh.id).single();
+  ok('streak_days is now maintained by the trigger', streaked.streak_days === 3,
+     `got ${streaked.streak_days}`);
+  ok('last_active_on is populated', streaked.last_active_on === d(0), streaked.last_active_on);
+
+  // same-day activity must not double count
+  await admin.from('learning_history').insert({
+    user_id: fresh.id, event_type: 'vocab_reviewed', xp: 3, occurred_on: d(0),
+  });
+  const { data: sameDay } = await admin.from('profiles')
+    .select('streak_days').eq('id', fresh.id).single();
+  ok('same-day activity does not inflate the streak', sameDay.streak_days === 3,
+     `got ${sameDay.streak_days}`);
 }
 
 // ------------------------------------------------------------

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import BadgeToast from '@/components/BadgeToast';
 import InstallPrompt from '@/components/InstallPrompt';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 
@@ -59,6 +60,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         {children}
+        <BadgeToast />
         <ServiceWorkerRegistrar />
         <InstallPrompt />
       </body>

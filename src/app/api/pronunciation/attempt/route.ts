@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { transcribeAndScore } from '@/lib/ai/service';
+import { checkBadges } from '@/lib/gamification';
 import type { CefrLevel } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -178,7 +179,10 @@ export async function POST(req: Request) {
       });
     }
 
+    const newBadges = await checkBadges(supabase, user.id);
+
     return Response.json({
+      new_badges: newBadges,
       attempt_id: attempt?.id,
       target_text: targetText,
       transcript: result.transcript,

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, Spinner } from '@/components/ui';
 import type { Correction } from '@/types/db';
+import { announceBadges } from '@/lib/badge-events';
 
 interface Msg {
   id: string;
@@ -81,6 +82,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
       if (!res.ok) throw new Error(data.error);
 
       setConvId(data.conversation_id);
+      announceBadges(data.new_badges);
       setMessages((m) => [
         ...m,
         {

@@ -14,6 +14,7 @@ const LINKS = [
   { href: '/pronunciation', label: 'تمرین تلفظ', icon: '🎤' },
   { href: '/assignments', label: 'تکالیف', icon: '✍️' },
   { href: '/progress', label: 'پیشرفت', icon: '📈' },
+  { href: '/leaderboard', label: 'جدول امتیاز', icon: '🏆' },
 ];
 
 export default function AppNav({ profile }: { profile: Profile }) {

@@ -3,6 +3,7 @@ import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { pickNextQuestion, PLACEMENT_LENGTH } from '@/lib/ai/placement-bank';
 import { computePlacement, scoreToLevel } from '@/lib/ai/local-engine';
 import { recordMistakes } from '@/lib/ai/service';
+import { checkBadges } from '@/lib/gamification';
 import type { CefrLevel, PlacementQuestion, SkillKind } from '@/types/db';
 import { LEVEL_FA, SKILLS } from '@/types/db';
 
@@ -116,7 +117,10 @@ export async function POST(req: Request) {
         ),
       ]);
 
+      const newBadges = await checkBadges(supabase, user.id);
+
       return Response.json({
+        new_badges: newBadges,
         done: true,
         correct,
         explanation_fa: current.explanation_fa,
