@@ -219,6 +219,11 @@ export interface Submission {
   feedback_fa: string | null;
   graded_at: string | null;
   created_at: string;
+  /** Manual feedback from the assigned teacher (read-only for students). */
+  teacher_feedback: string | null;
+  teacher_score: number | null;
+  teacher_feedback_by: string | null;
+  teacher_feedback_at: string | null;
 }
 
 export interface MistakeMemory {
@@ -356,5 +361,18 @@ export interface PronunciationAttempt {
   duration_ms: number | null;
   source: TranscriptSource;
   used_fallback: boolean;
+  created_at: string;
+}
+
+/** A row from the my_students() roster function. */
+export interface StudentRosterRow {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  current_level: CefrLevel | null;
+  target_level: CefrLevel | null;
+  streak_days: number;
+  last_active_on: string | null;
+  placement_done: boolean;
   created_at: string;
 }

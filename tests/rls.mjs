@@ -418,6 +418,160 @@ console.log('\n12b) Pronunciation attempts & speech audio');
 }
 
 // ------------------------------------------------------------
+console.log('\n12c) Teacher panel — cross-teacher isolation');
+{
+  // Two teachers, each with their own student.
+  const teacherA = await makeUser('teacherA');
+  const teacherB = await makeUser('teacherB');
+  const studentA = await makeUser('studentA');
+  const studentB = await makeUser('studentB');
+
+  await admin.from('profiles').update({ role: 'teacher' }).eq('id', teacherA.id);
+  await admin.from('profiles').update({ role: 'teacher' }).eq('id', teacherB.id);
+  await admin.from('profiles').update({ teacher_id: teacherA.id }).eq('id', studentA.id);
+  await admin.from('profiles').update({ teacher_id: teacherB.id }).eq('id', studentB.id);
+
+  const tA = await signIn(teacherA);
+  const tB = await signIn(teacherB);
+  const sA = await signIn(studentA);
+
+  // ---- seed data owned by each student ----
+  const { data: subA } = await admin.from('submissions').insert({
+    user_id: studentA.id, answer_text: 'Student A wrote this.', score: 70,
+    feedback_fa: 'بازخورد خودکار', graded_at: new Date().toISOString(),
+  }).select('id').single();
+
+  const { data: subB } = await admin.from('submissions').insert({
+    user_id: studentB.id, answer_text: 'Student B wrote this.', score: 65,
+  }).select('id').single();
+
+  await admin.from('skill_levels').insert({ user_id: studentA.id, skill: 'grammar', level: 'B1', score: 71 });
+  await admin.from('mistakes_memory').insert({
+    user_id: studentA.id, error_tag: 'articles_teacher_test', error_label_fa: 'حروف تعریف', occurrences: 3,
+  });
+  await admin.from('learning_history').insert({ user_id: studentA.id, event_type: 'lesson_completed', xp: 12 });
+
+  // ---- roster function scoping ----
+  const { data: rosterA } = await tA.rpc('my_students');
+  const idsA = (rosterA ?? []).map((r) => r.id);
+  ok('my_students() returns the teacher own student', idsA.includes(studentA.id));
+  ok("my_students() excludes the other teacher's student", !idsA.includes(studentB.id));
+
+  const { data: rosterB } = await tB.rpc('my_students');
+  const idsB = (rosterB ?? []).map((r) => r.id);
+  ok('teacher B sees only their own student', idsB.includes(studentB.id) && !idsB.includes(studentA.id));
+
+  const { data: rosterStudent } = await sA.rpc('my_students');
+  ok('a student gets an empty roster', (rosterStudent ?? []).length === 0);
+
+  // ---- profile visibility ----
+  const { data: aSeesOwn } = await tA.from('profiles').select('id').eq('id', studentA.id);
+  ok('teacher A can read their student profile', aSeesOwn?.length === 1);
+
+  const { data: aSeesOther } = await tA.from('profiles').select('id').eq('id', studentB.id);
+  ok("teacher A cannot read teacher B's student profile", (aSeesOther ?? []).length === 0);
+
+  const { data: aSeesTeacherB } = await tA.from('profiles').select('id').eq('id', teacherB.id);
+  ok('teacher A cannot read another teacher profile', (aSeesTeacherB ?? []).length === 0);
+
+  // ---- learning data visibility ----
+  for (const table of ['skill_levels', 'mistakes_memory', 'learning_history', 'submissions']) {
+    const { data: mine } = await tA.from(table).select('id').eq('user_id', studentA.id);
+    ok(`teacher A reads ${table.padEnd(17)} of own student`, (mine ?? []).length >= 1);
+
+    const { data: theirs } = await tA.from(table).select('id').eq('user_id', studentB.id);
+    ok(`teacher A blocked from ${table.padEnd(17)} of other student`, (theirs ?? []).length === 0);
+  }
+
+  // ---- teacher feedback: the assigned teacher may write ----
+  const { error: fbErr } = await tA.from('submissions')
+    .update({ teacher_feedback: 'خیلی خوب بود، ادامه بده.', teacher_score: 85 })
+    .eq('id', subA.id);
+  ok('assigned teacher can write teacher_feedback', !fbErr, fbErr?.message);
+
+  const { data: fbRow } = await admin.from('submissions')
+    .select('teacher_feedback, teacher_score, teacher_feedback_by, teacher_feedback_at')
+    .eq('id', subA.id).single();
+  ok('  feedback persisted', fbRow?.teacher_feedback === 'خیلی خوب بود، ادامه بده.');
+  ok('  teacher score persisted', Number(fbRow?.teacher_score) === 85);
+  ok('  authorship stamped automatically', fbRow?.teacher_feedback_by === teacherA.id);
+  ok('  timestamp stamped automatically', !!fbRow?.teacher_feedback_at);
+
+  // ---- teacher B must not write on teacher A's student ----
+  const { error: crossErr } = await tB.from('submissions')
+    .update({ teacher_feedback: 'نفوذ' }).eq('id', subA.id);
+  const { data: afterCross } = await admin.from('submissions')
+    .select('teacher_feedback').eq('id', subA.id).single();
+  ok("teacher B cannot write feedback on teacher A's student",
+     afterCross.teacher_feedback === 'خیلی خوب بود، ادامه بده.',
+     `err=${crossErr?.message}`);
+
+  // ---- the student may READ but not WRITE their feedback ----
+  const { data: studentReads } = await sA.from('submissions')
+    .select('teacher_feedback, teacher_score').eq('id', subA.id).maybeSingle();
+  ok('student can read the teacher feedback', studentReads?.teacher_feedback === 'خیلی خوب بود، ادامه بده.');
+  ok('student can read the teacher score', Number(studentReads?.teacher_score) === 85);
+
+  const { error: selfErr } = await sA.from('submissions')
+    .update({ teacher_feedback: 'من به خودم نمره می‌دهم', teacher_score: 100 })
+    .eq('id', subA.id);
+  const { data: afterSelf } = await admin.from('submissions')
+    .select('teacher_feedback, teacher_score').eq('id', subA.id).single();
+  ok('student CANNOT write their own teacher_feedback',
+     afterSelf.teacher_feedback === 'خیلی خوب بود، ادامه بده.', `err=${selfErr?.message}`);
+  ok('student CANNOT inflate their own teacher_score',
+     Number(afterSelf.teacher_score) === 85, `${afterSelf.teacher_score}`);
+
+  // ---- a student cannot pre-fill feedback at insert time ----
+  const { error: insErr } = await sA.from('submissions').insert({
+    user_id: studentA.id, answer_text: 'sneaky', teacher_feedback: 'عالی', teacher_score: 100,
+  });
+  ok('student cannot insert a row with teacher_feedback pre-filled', !!insErr);
+
+  // ---- a student may still edit their own non-privileged fields ----
+  const { error: ownEditErr } = await sA.from('submissions')
+    .update({ answer_text: 'Student A revised this.' }).eq('id', subA.id);
+  ok('student can still edit their own answer text', !ownEditErr, ownEditErr?.message);
+
+  const { data: preserved } = await admin.from('submissions')
+    .select('teacher_feedback').eq('id', subA.id).single();
+  ok('  ordinary edits do not wipe teacher feedback',
+     preserved.teacher_feedback === 'خیلی خوب بود، ادامه بده.');
+
+  // ---- assignments ----
+  const { error: assignOk } = await tA.from('assignments').insert({
+    user_id: studentA.id, assigned_by: teacherA.id, title: 'تکلیف مدرس A', skill: 'writing',
+  });
+  ok('teacher A can assign homework to their own student', !assignOk, assignOk?.message);
+
+  const { error: assignBad } = await tA.from('assignments').insert({
+    user_id: studentB.id, assigned_by: teacherA.id, title: 'نفوذ', skill: 'writing',
+  });
+  ok("teacher A cannot assign to teacher B's student", !!assignBad);
+
+  // ---- teachers cannot reassign students to themselves ----
+  await tB.from('profiles').update({ teacher_id: teacherB.id }).eq('id', studentA.id);
+  const { data: stillA } = await admin.from('profiles').select('teacher_id').eq('id', studentA.id).single();
+  ok('teacher cannot steal another teacher student', stillA.teacher_id === teacherA.id,
+     `now ${stillA.teacher_id}`);
+
+  // ---- only an admin may reassign ----
+  const adminUser = await makeUser('reassignAdmin');
+  await admin.from('profiles').update({ role: 'admin' }).eq('id', adminUser.id);
+  const adDb = await signIn(adminUser);
+  await adDb.from('profiles').update({ teacher_id: teacherB.id }).eq('id', studentA.id);
+  const { data: moved } = await admin.from('profiles').select('teacher_id').eq('id', studentA.id).single();
+  ok('admin CAN reassign a student to another teacher', moved.teacher_id === teacherB.id);
+
+  // and the old teacher immediately loses access
+  const { data: aAfterMove } = await tA.from('profiles').select('id').eq('id', studentA.id);
+  ok('previous teacher loses access after reassignment', (aAfterMove ?? []).length === 0);
+
+  await admin.from('mistakes_memory').delete().eq('error_tag', 'articles_teacher_test');
+  void subB;
+}
+
+// ------------------------------------------------------------
 console.log('\n13) Cascade cleanup');
 {
   await admin.auth.admin.deleteUser(alice.id);

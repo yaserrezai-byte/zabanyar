@@ -79,6 +79,19 @@ export default async function AssignmentsPage() {
                   </summary>
                   <div className="mt-3 space-y-2 text-sm">
                     <p className="leading-7">{sub.feedback_fa}</p>
+                    {sub.teacher_feedback && (
+                      <div className="rounded-lg border border-brand-200 bg-brand-50 p-2.5">
+                        <div className="mb-1 text-xs font-bold text-brand-700">
+                          👨‍🏫 بازخورد مدرس
+                          {sub.teacher_score != null && (
+                            <span className="num badge mr-2 bg-brand-600 text-white">
+                              {Math.round(sub.teacher_score)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="leading-7">{sub.teacher_feedback}</p>
+                      </div>
+                    )}
                     {typeof sub.ai_feedback === 'object' && sub.ai_feedback && 'corrected_text' in sub.ai_feedback && (
                       <div className="rounded-lg p-2.5" style={{ background: 'var(--bg)' }}>
                         <div className="mb-1 text-xs font-bold">متن اصلاح‌شده:</div>

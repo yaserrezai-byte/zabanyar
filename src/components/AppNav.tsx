@@ -21,6 +21,9 @@ export default function AppNav({ profile }: { profile: Profile }) {
   const [open, setOpen] = useState(false);
 
   const links = [...LINKS];
+  if (profile.role === 'teacher' || profile.role === 'admin') {
+    links.push({ href: '/teacher', label: 'پنل مدرس', icon: '👨‍🏫' });
+  }
   if (profile.role === 'admin') {
     links.push({ href: '/admin', label: 'مدیریت', icon: '🛡️' });
   }
