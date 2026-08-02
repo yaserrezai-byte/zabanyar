@@ -5,6 +5,7 @@ import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { CefrLevel } from '@/types/db';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
 import { announceBadges } from '@/lib/badge-events';
+import Speak from '@/components/Speak';
 
 // ------------------------------------------------------------
 // Minimal typings for the Web Speech API (not in lib.dom yet)
@@ -289,7 +290,10 @@ export default function PronunciationPractice({
           <span className="badge bg-slate-100 text-slate-700">{sentence.focus_fa}</span>
         </div>
 
-        <p className="ltr text-xl font-bold leading-9" dir="ltr">{sentence.text}</p>
+        <div className="flex items-start gap-2">
+          <p className="ltr text-xl font-bold leading-9" dir="ltr">{sentence.text}</p>
+          <Speak text={sentence.text} size="md" />
+        </div>
         <p className="mt-1.5 text-sm leading-7" style={{ color: 'var(--muted)' }}>
           {sentence.translation_fa}
         </p>
@@ -382,7 +386,10 @@ export default function PronunciationPractice({
           {result.transcript && (
             <div className="mb-4 rounded-xl p-3" style={{ background: 'var(--bg)' }}>
               <div className="mb-1 text-sm font-bold">🎧 آنچه شنیده شد</div>
-              <p className="ltr leading-8" dir="ltr">{result.transcript}</p>
+              <div className="flex items-start gap-1.5">
+                <p className="ltr leading-8" dir="ltr">{result.transcript}</p>
+                <Speak text={result.transcript} />
+              </div>
             </div>
           )}
 

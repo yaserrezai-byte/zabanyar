@@ -5,6 +5,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { Alert, Card, Spinner } from '@/components/ui';
 import { MESSAGE_COOLDOWN_MS, moderate, type GroupScenario } from '@/lib/group-chat';
+import Speak from '@/components/Speak';
 
 interface GroupMessage {
   id: string;
@@ -362,7 +363,10 @@ export default function GroupChat({
                             : { background: 'var(--bg)', border: '1px solid var(--border)' }
                       }
                     >
-                      <p className="ltr leading-7" dir="ltr">{m.content}</p>
+                      <div className="flex items-start gap-1.5">
+                        <p className="ltr leading-7" dir="ltr">{m.content}</p>
+                        <Speak text={m.content} />
+                      </div>
 
                       {m.translation_fa && (
                         <>
@@ -391,6 +395,7 @@ export default function GroupChat({
                             <span className="ltr line-through opacity-60" dir="ltr">{c.wrong}</span>
                             {' → '}
                             <span className="ltr font-bold" dir="ltr">{c.right}</span>
+                            <Speak text={c.right} size="xs" />
                             <div className="mt-0.5 leading-6">{c.note_fa}</div>
                           </div>
                         ))}

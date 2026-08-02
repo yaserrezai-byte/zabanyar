@@ -5,6 +5,7 @@ import { Alert, Card, LevelBadge, SectionTitle, Spinner } from '@/components/ui'
 import GroupChat, { type Participant } from '@/components/GroupChat';
 import { scenarioById, type GroupScenario } from '@/lib/group-chat';
 import type { CefrLevel } from '@/types/db';
+import Speak from '@/components/Speak';
 
 export default function GroupLobby({
   level,
@@ -105,7 +106,10 @@ export default function GroupLobby({
                 </div>
 
                 <div className="mt-2 font-bold">{s.topic_fa}</div>
-                <div className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">{s.topic}</div>
+                <div className="flex items-center gap-1">
+                  <span className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">{s.topic}</span>
+                  <Speak text={s.topic} size="xs" />
+                </div>
 
                 <p className="mt-2 text-xs leading-6" style={{ color: 'var(--muted)' }}>
                   {s.description_fa}

@@ -4,6 +4,7 @@ import WritingWorkshop from '@/components/WritingWorkshop';
 import { Card, SectionTitle } from '@/components/ui';
 import type { Assignment, Submission } from '@/types/db';
 import { SKILL_FA, SKILL_ICON, type SkillKind } from '@/types/db';
+import Speak from '@/components/Speak';
 
 export const metadata = { title: 'تکالیف | زبان‌یار' };
 export const dynamic = 'force-dynamic';
@@ -95,9 +96,12 @@ export default async function AssignmentsPage() {
                     {typeof sub.ai_feedback === 'object' && sub.ai_feedback && 'corrected_text' in sub.ai_feedback && (
                       <div className="rounded-lg p-2.5" style={{ background: 'var(--bg)' }}>
                         <div className="mb-1 text-xs font-bold">متن اصلاح‌شده:</div>
-                        <p className="ltr leading-7" dir="ltr">
-                          {String((sub.ai_feedback as Record<string, unknown>).corrected_text)}
-                        </p>
+                        <div className="flex items-start gap-1.5">
+                          <p className="ltr leading-7" dir="ltr">
+                            {String((sub.ai_feedback as Record<string, unknown>).corrected_text)}
+                          </p>
+                          <Speak text={String((sub.ai_feedback as Record<string, unknown>).corrected_text)} />
+                        </div>
                       </div>
                     )}
                   </div>

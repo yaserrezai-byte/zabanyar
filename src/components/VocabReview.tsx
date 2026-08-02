@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card, LevelBadge, Progress, Spinner, Stat } from '@/components/ui';
 import type { VocabularyMemory } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
+import Speak from '@/components/Speak';
 
 const QUALITY = [
   { q: 0, label: 'بلد نبودم', emoji: '😰', color: '#f43f5e' },
@@ -115,7 +116,10 @@ export default function VocabReview({
           </span>
         </div>
 
-        <h2 className="ltr text-3xl font-bold" dir="ltr">{current.word}</h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="ltr text-3xl font-bold" dir="ltr">{current.word}</h2>
+          <Speak text={current.word} size="md" />
+        </div>
         {current.phonetic && (
           <p className="ltr mt-1 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">
             {current.phonetic}
@@ -136,7 +140,10 @@ export default function VocabReview({
             <div className="mt-5 rounded-xl p-4" style={{ background: 'var(--bg)' }}>
               <p className="text-lg font-medium">{current.meaning_fa}</p>
               {current.example_en && (
-                <p className="ltr mt-3 text-sm" dir="ltr">{current.example_en}</p>
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  <p className="ltr text-sm" dir="ltr">{current.example_en}</p>
+                  <Speak text={current.example_en} />
+                </div>
               )}
               {current.example_fa && (
                 <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{current.example_fa}</p>

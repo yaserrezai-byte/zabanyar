@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Progress, Spinner } from '@/components/ui';
+import Speak from '@/components/Speak';
 
 export interface ReviewableSubmission {
   id: string;
@@ -83,9 +84,12 @@ export default function SubmissionReview({
               👤 {studentName}
             </div>
           )}
-          <p className="ltr line-clamp-2 text-sm leading-7" dir="ltr">
-            {submission.answer_text}
-          </p>
+          <div className="flex items-start gap-1.5">
+            <p className="ltr line-clamp-2 text-sm leading-7" dir="ltr">
+              {submission.answer_text}
+            </p>
+            <Speak text={submission.answer_text ?? ''} size="xs" />
+          </div>
           <div className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
             {new Date(submission.created_at).toLocaleDateString('fa-IR')}
           </div>

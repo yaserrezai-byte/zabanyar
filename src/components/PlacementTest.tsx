@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, Card, LevelBadge, Progress, Spinner } from '@/components/ui';
 import { SKILL_FA, SKILL_ICON, type CefrLevel, type SkillKind } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
+import Speak from '@/components/Speak';
 
 interface Question {
   id: string;
@@ -206,7 +207,10 @@ export default function PlacementTest() {
       </div>
 
       <Card className="p-6">
-        <p className="ltr mb-1 text-lg font-medium" dir="ltr">{question.prompt}</p>
+        <div className="mb-1 flex items-start gap-2">
+          <p className="ltr text-lg font-medium" dir="ltr">{question.prompt}</p>
+          <Speak text={question.prompt} />
+        </div>
         {question.prompt_fa && (
           <p className="mb-4 text-sm" style={{ color: 'var(--muted)' }}>{question.prompt_fa}</p>
         )}

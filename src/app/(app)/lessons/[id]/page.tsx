@@ -5,6 +5,7 @@ import { Card, LevelBadge } from '@/components/ui';
 import LessonExercises from '@/components/LessonExercises';
 import type { Exercise, Lesson, SkillKind } from '@/types/db';
 import { SKILL_FA, SKILL_ICON } from '@/types/db';
+import Speak from '@/components/Speak';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,10 @@ export default async function LessonPage({
           <span className="badge bg-slate-100 text-slate-700">⏱ {l.est_minutes} دقیقه</span>
         </div>
         <h1 className="text-2xl font-bold leading-9">{l.title_fa || l.title}</h1>
-        <p className="ltr mt-1 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">{l.title}</p>
+        <p className="ltr mt-1 flex items-center gap-1.5 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">
+          {l.title}
+          <Speak text={l.title} size="xs" />
+        </p>
         {l.summary_fa && <p className="mt-3 leading-8">{l.summary_fa}</p>}
       </Card>
 
@@ -60,7 +64,10 @@ export default async function LessonPage({
             <div className="mt-4 space-y-2">
               {s.examples.map((ex, j) => (
                 <div key={j} className="rounded-xl p-3" style={{ background: 'var(--bg)' }}>
-                  <p className="ltr font-medium" dir="ltr">{ex.en}</p>
+                  <div className="flex items-start gap-1.5">
+                    <p className="ltr font-medium" dir="ltr">{ex.en}</p>
+                    <Speak text={ex.en} />
+                  </div>
                   <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{ex.fa}</p>
                 </div>
               ))}
@@ -82,7 +89,10 @@ export default async function LessonPage({
             {vocabulary.map((w, i) => (
               <div key={i} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="ltr font-bold" dir="ltr">{w.word}</span>
+                  <span className="flex items-center gap-1">
+                    <span className="ltr font-bold" dir="ltr">{w.word}</span>
+                    <Speak text={w.word} size="xs" />
+                  </span>
                   {w.part_of_speech && (
                     <span className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">
                       {w.part_of_speech}
@@ -91,8 +101,11 @@ export default async function LessonPage({
                 </div>
                 <div className="mt-1 text-sm">{w.meaning_fa}</div>
                 {w.example_en && (
-                  <div className="ltr mt-2 text-xs" style={{ color: 'var(--muted)' }} dir="ltr">
-                    {w.example_en}
+                  <div className="mt-2 flex items-start gap-1">
+                    <span className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">
+                      {w.example_en}
+                    </span>
+                    <Speak text={w.example_en} size="xs" />
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Alert, Card, Progress } from '@/components/ui';
 import type { Exercise } from '@/types/db';
+import Speak from '@/components/Speak';
 
 export default function LessonExercises({
   exercises,
@@ -80,6 +81,7 @@ export default function LessonExercises({
                   {idx + 1}.
                 </span>
                 <span className="ltr inline font-medium" dir="ltr">{ex.prompt}</span>
+                <Speak text={ex.prompt} size="xs" className="mr-1" />
                 {ex.prompt_fa && (
                   <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{ex.prompt_fa}</p>
                 )}

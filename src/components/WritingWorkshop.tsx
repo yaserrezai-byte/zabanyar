@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { Assignment, SkillKind } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
+import Speak from '@/components/Speak';
 
 const PROMPTS = [
   { fa: 'روز خود را توصیف کنید', en: 'Describe your day today. What did you do?' },
@@ -169,7 +170,10 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
           {result.corrected_text && result.corrected_text !== text && (
             <div className="mb-4 rounded-xl p-3" style={{ background: 'var(--bg)' }}>
               <div className="mb-1.5 text-sm font-bold">✅ متن اصلاح‌شده</div>
-              <p className="ltr leading-8" dir="ltr">{result.corrected_text}</p>
+              <div className="flex items-start gap-1.5">
+                <p className="ltr leading-8" dir="ltr">{result.corrected_text}</p>
+                <Speak text={result.corrected_text} />
+              </div>
             </div>
           )}
 
@@ -183,6 +187,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
                       <span className="ltr inline-block line-through opacity-60" dir="ltr">{e.wrong}</span>
                       {' → '}
                       <span className="ltr inline-block font-bold" dir="ltr">{e.right}</span>
+                      <Speak text={e.right} size="xs" />
                     </div>
                     <div className="mt-1 text-xs leading-7 text-rose-800">{e.note_fa}</div>
                   </div>

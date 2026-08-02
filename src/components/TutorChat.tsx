@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, Spinner } from '@/components/ui';
 import type { Correction } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
+import Speak from '@/components/Speak';
 
 interface Msg {
   id: string;
@@ -208,7 +209,10 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                       : { background: 'var(--bg)', border: '1px solid var(--border)' }
                   }
                 >
-                  <p className="ltr leading-7" dir="ltr">{m.content}</p>
+                  <div className="flex items-start gap-1.5">
+                    <p className="ltr leading-7" dir="ltr">{m.content}</p>
+                    <Speak text={m.content} />
+                  </div>
 
                   {m.translation_fa && (
                     <>
@@ -235,6 +239,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                         <span className="ltr inline-block line-through opacity-60" dir="ltr">{c.wrong}</span>
                         {' → '}
                         <span className="ltr inline-block font-bold" dir="ltr">{c.right}</span>
+                        <Speak text={c.right} size="xs" />
                         <div className="mt-0.5 text-xs leading-6">{c.note_fa}</div>
                       </div>
                     ))}

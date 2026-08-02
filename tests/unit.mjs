@@ -694,6 +694,49 @@ console.log('\n16) Lesson variety (regression: only 2 lessons ever appeared)');
   }
 }
 
+// ------------------------------------------------------------
+console.log('\n17) Pronunciation buttons are wired everywhere');
+{
+  // Guard: every screen where a learner meets English must offer a
+  // pronunciation button. A regression here is silent in the UI, so
+  // assert on the source.
+  const fs = await import('node:fs');
+  const pathMod = await import('node:path');
+  const R = (f) => fs.readFileSync(pathMod.join(root, f), 'utf8');
+
+  const WIRED = [
+    ['src/components/VocabReview.tsx',            'مرور لغات'],
+    ['src/components/TutorChat.tsx',              'مربی هوشمند'],
+    ['src/components/GroupChat.tsx',              'گفت‌وگوی گروهی'],
+    ['src/components/PlacementTest.tsx',          'آزمون تعیین سطح'],
+    ['src/components/LessonExercises.tsx',        'تمرین‌های درس'],
+    ['src/components/WritingWorkshop.tsx',        'کارگاه نوشتن'],
+    ['src/components/PronunciationPractice.tsx',  'تمرین تلفظ'],
+    ['src/components/PronunciationWorkshop.tsx',  'فهرست جملات'],
+    ['src/components/GroupLobby.tsx',             'انتخاب سناریو'],
+    ['src/components/teacher/SubmissionReview.tsx','بازبینی مدرس'],
+    ['src/app/(app)/lessons/[id]/page.tsx',       'صفحه درس'],
+    ['src/app/(app)/assignments/page.tsx',        'تکالیف'],
+  ];
+
+  for (const [file, label] of WIRED) {
+    const src = R(file);
+    ok(`${label.padEnd(20)} دکمه تلفظ دارد`,
+       src.includes("from '@/components/Speak'") && /<Speak\b/.test(src),
+       file);
+  }
+
+  // The shared component itself must behave safely.
+  const speak = R('src/components/Speak.tsx');
+  ok('فقط برای متن دارای حروف لاتین رندر می‌شود', speak.includes("/[a-zA-Z]/.test(text)"));
+  ok('صدای انگلیسی را ترجیح می‌دهد', speak.includes('pickEnglishVoice'));
+  ok('از انتخاب صدای فارسی جلوگیری می‌کند', speak.includes("startsWith('en')"));
+  ok('کلیک را از والد جدا می‌کند', speak.includes('stopPropagation'));
+  ok('هنگام unmount صدا را قطع می‌کند', speak.includes('speechSynthesis.cancel()'));
+  ok('برچسب دسترس‌پذیری فارسی دارد', speak.includes('شنیدن تلفظ'));
+  ok('نبود پشتیبانی مرورگر را مدیریت می‌کند', speak.includes('if (!supported) return null'));
+}
+
 console.log(`\n${'='.repeat(50)}`);
 console.log(`  ✅ passed: ${pass}    ❌ failed: ${fail}`);
 console.log('='.repeat(50) + '\n');

@@ -5,6 +5,7 @@ import { Card, LevelBadge, SectionTitle, Stat } from '@/components/ui';
 import PronunciationPractice from '@/components/PronunciationPractice';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
 import type { CefrLevel } from '@/types/db';
+import Speak from '@/components/Speak';
 
 interface RecentAttempt {
   id: string;
@@ -78,7 +79,10 @@ export default function PronunciationWorkshop({
                     background: selected.id === s.id ? 'var(--color-brand-50)' : 'transparent',
                   }}
                 >
-                  <div className="ltr text-sm font-medium leading-6" dir="ltr">{s.text}</div>
+                  <div className="flex items-start gap-1">
+                    <div className="ltr text-sm font-medium leading-6" dir="ltr">{s.text}</div>
+                    <Speak text={s.text} size="xs" />
+                  </div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>{s.focus_fa}</span>
                     <span className="num text-[11px]" style={{ color: 'var(--muted)' }}>{s.level}</span>
