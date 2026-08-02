@@ -315,23 +315,301 @@ const LESSON_TEMPLATES: Record<string, LessonTemplate> = {
       { kind: 'mcq', prompt: 'Is Friday ___ for you?', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['comfortable', 'convenient', 'available', 'possible to'], correct_answer: 1, explanation_fa: 'برای زمان مناسب از convenient استفاده می‌شود.', error_tag: 'collocations' },
     ],
   },
+  prepositions: {
+    title: 'Prepositions of Place and Time',
+    title_fa: 'حروف اضافه مکان و زمان',
+    summary_fa: 'کاربرد درست in، on و at که یکی از پرتکرارترین اشتباهات فارسی‌زبانان است.',
+    sections: [
+      { heading_fa: 'حروف اضافه زمان', body_fa: 'برای سال و ماه از in، برای روز و تاریخ از on و برای ساعت دقیق از at استفاده می‌کنیم. این تقسیم‌بندی در فارسی وجود ندارد و باید جداگانه حفظ شود.', examples: [{ en: 'I was born in 1995.', fa: 'در سال ۱۹۹۵ متولد شدم.' }, { en: 'The meeting is on Monday.', fa: 'جلسه روز دوشنبه است.' }, { en: 'We start at 8 o\u2019clock.', fa: 'ساعت ۸ شروع می‌کنیم.' }], tip_fa: 'قاعده بزرگ به کوچک: in (بزرگ‌ترین) ← on ← at (دقیق‌ترین).' },
+      { heading_fa: 'حروف اضافه مکان', body_fa: 'in برای فضای بسته، on برای روی سطح و at برای نقطه یا مکان مشخص به‌کار می‌رود.', examples: [{ en: 'She is in the kitchen.', fa: 'او در آشپزخانه است.' }, { en: 'The book is on the table.', fa: 'کتاب روی میز است.' }, { en: 'I am at the bus stop.', fa: 'من در ایستگاه اتوبوس هستم.' }], tip_fa: 'at the station یعنی نقطه‌ای مشخص؛ in the station یعنی داخل ساختمان آن.' },
+      { heading_fa: 'ترکیب‌های ثابت', body_fa: 'بعضی افعال حرف اضافه ثابتی دارند که باید با هم حفظ شوند: depend on، good at، interested in، married to، listen to.', examples: [{ en: 'It depends on the weather.', fa: 'به هوا بستگی دارد.' }, { en: 'She is good at maths.', fa: 'او در ریاضی خوب است.' }], tip_fa: 'اشتباه رایج: depend of به‌جای depend on.' },
+    ],
+    vocabulary: [
+      { word: 'depend', meaning_fa: 'بستگی داشتن', example_en: 'It depends on you.', example_fa: 'به تو بستگی دارد.', part_of_speech: 'verb' },
+      { word: 'arrive', meaning_fa: 'رسیدن', example_en: 'We arrived at the airport.', example_fa: 'به فرودگاه رسیدیم.', part_of_speech: 'verb' },
+      { word: 'between', meaning_fa: 'بین', example_en: 'It is between the bank and the shop.', example_fa: 'بین بانک و مغازه است.', part_of_speech: 'preposition' },
+      { word: 'opposite', meaning_fa: 'روبه‌رو', example_en: 'The park is opposite my house.', example_fa: 'پارک روبه‌روی خانه من است.', part_of_speech: 'preposition' },
+      { word: 'during', meaning_fa: 'در طول', example_en: 'I slept during the film.', example_fa: 'در طول فیلم خوابیدم.', part_of_speech: 'preposition' },
+      { word: 'until', meaning_fa: 'تا وقتی که', example_en: 'Wait until tomorrow.', example_fa: 'تا فردا صبر کن.', part_of_speech: 'preposition' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'I was born ___ 1998.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['in', 'on', 'at', 'to'], correct_answer: 0, explanation_fa: 'برای سال از in استفاده می‌شود.', error_tag: 'preposition' },
+      { kind: 'mcq', prompt: 'The class starts ___ 9 a.m.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['in', 'on', 'at', 'by'], correct_answer: 2, explanation_fa: 'برای ساعت دقیق از at استفاده می‌شود.', error_tag: 'preposition' },
+      { kind: 'mcq', prompt: 'My birthday is ___ Friday.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['in', 'on', 'at', 'of'], correct_answer: 1, explanation_fa: 'برای روزهای هفته از on استفاده می‌شود.', error_tag: 'preposition' },
+      { kind: 'mcq', prompt: 'It depends ___ the price.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['of', 'on', 'to', 'from'], correct_answer: 1, explanation_fa: 'ترکیب ثابت depend on است.', error_tag: 'preposition' },
+      { kind: 'mcq', prompt: 'She is very good ___ cooking.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['in', 'on', 'at', 'with'], correct_answer: 2, explanation_fa: 'ترکیب ثابت good at است.', error_tag: 'preposition' },
+      { kind: 'mcq', prompt: 'The keys are ___ the drawer.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['in', 'on', 'at', 'by'], correct_answer: 0, explanation_fa: 'برای داخل فضای بسته از in استفاده می‌شود.', error_tag: 'preposition' },
+    ],
+  },
+  comparatives: {
+    title: 'Comparatives and Superlatives',
+    title_fa: 'صفات تفضیلی و عالی',
+    summary_fa: 'مقایسه کردن چیزها با er/est و more/most بدون اشتباه رایج «more taller».',
+    sections: [
+      { heading_fa: 'صفات کوتاه', body_fa: 'صفات یک‌هجایی با er تفضیلی و با est عالی می‌شوند: tall → taller → the tallest. اگر صفت به یک مصوت و یک بی‌صدا ختم شود، حرف آخر تکرار می‌شود: big → bigger.', examples: [{ en: 'He is taller than me.', fa: 'او از من بلندقدتر است.' }, { en: 'This is the biggest room.', fa: 'این بزرگ‌ترین اتاق است.' }], tip_fa: 'صفاتی که به y ختم می‌شوند: happy → happier → the happiest.' },
+      { heading_fa: 'صفات بلند', body_fa: 'صفات دو هجا و بیشتر با more و most مقایسه می‌شوند: expensive → more expensive → the most expensive.', examples: [{ en: 'This phone is more expensive.', fa: 'این گوشی گران‌تر است.' }, { en: 'It was the most interesting film.', fa: 'جالب‌ترین فیلم بود.' }], tip_fa: 'هرگز more و er را با هم به‌کار نبرید: more taller غلط است.' },
+      { heading_fa: 'صفات بی‌قاعده و as...as', body_fa: 'good → better → the best و bad → worse → the worst بی‌قاعده‌اند. برای برابری از as ... as استفاده می‌شود.', examples: [{ en: 'My English is better than last year.', fa: 'انگلیسی‌ام از پارسال بهتر است.' }, { en: 'She is as tall as her brother.', fa: 'او هم‌قد برادرش است.' }], tip_fa: 'بعد از صفت تفضیلی از than و بعد از صفت عالی از the استفاده کنید.' },
+    ],
+    vocabulary: [
+      { word: 'expensive', meaning_fa: 'گران', example_en: 'Cars are expensive here.', example_fa: 'ماشین اینجا گران است.', part_of_speech: 'adjective' },
+      { word: 'comfortable', meaning_fa: 'راحت', example_en: 'This chair is comfortable.', example_fa: 'این صندلی راحت است.', part_of_speech: 'adjective' },
+      { word: 'difficult', meaning_fa: 'دشوار', example_en: 'The test was difficult.', example_fa: 'آزمون دشوار بود.', part_of_speech: 'adjective' },
+      { word: 'crowded', meaning_fa: 'شلوغ', example_en: 'The bus was crowded.', example_fa: 'اتوبوس شلوغ بود.', part_of_speech: 'adjective' },
+      { word: 'quiet', meaning_fa: 'ساکت', example_en: 'This street is quiet.', example_fa: 'این خیابان ساکت است.', part_of_speech: 'adjective' },
+      { word: 'similar', meaning_fa: 'شبیه', example_en: 'They are similar to each other.', example_fa: 'شبیه هم هستند.', part_of_speech: 'adjective' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'This book is ___ than that one.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['more good', 'better', 'gooder', 'best'], correct_answer: 1, explanation_fa: 'good بی‌قاعده است و تفضیلی آن better می‌شود.', error_tag: 'comparatives' },
+      { kind: 'mcq', prompt: 'He is ___ student in the class.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['the smartest', 'smartest', 'more smart', 'the most smart'], correct_answer: 0, explanation_fa: 'صفت عالی با the می‌آید و smart کوتاه است پس est می‌گیرد.', error_tag: 'comparatives' },
+      { kind: 'mcq', prompt: 'My car is ___ expensive than yours.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['more', 'most', 'much', 'very'], correct_answer: 0, explanation_fa: 'expensive صفت بلند است و با more مقایسه می‌شود.', error_tag: 'comparatives' },
+      { kind: 'mcq', prompt: 'She is as tall ___ her sister.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['than', 'as', 'like', 'of'], correct_answer: 1, explanation_fa: 'ساختار برابری as ... as است.', error_tag: 'comparatives' },
+      { kind: 'mcq', prompt: 'Today is ___ than yesterday.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['hotter', 'more hot', 'hottest', 'hot'], correct_answer: 0, explanation_fa: 'hot یک‌هجایی است و حرف آخر تکرار می‌شود: hotter.', error_tag: 'comparatives' },
+      { kind: 'mcq', prompt: 'This was ___ day of my life.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['worse', 'the worst', 'the baddest', 'more bad'], correct_answer: 1, explanation_fa: 'bad بی‌قاعده است: bad → worse → the worst.', error_tag: 'comparatives' },
+    ],
+  },
+  modals: {
+    title: 'Modal Verbs',
+    title_fa: 'افعال کمکی وجهی',
+    summary_fa: 'can، should، must و would برای بیان توانایی، توصیه، اجبار و درخواست مؤدبانه.',
+    sections: [
+      { heading_fa: 'ساختار کلی', body_fa: 'بعد از تمام افعال وجهی، فعل اصلی به شکل ساده و بدون to می‌آید. این افعال با سوم‌شخص مفرد s نمی‌گیرند.', examples: [{ en: 'She can swim very well.', fa: 'او خیلی خوب شنا می‌کند.' }, { en: 'You should rest.', fa: 'باید استراحت کنی.' }], tip_fa: 'اشتباه رایج: She can to swim یا He cans — هر دو غلط‌اند.' },
+      { heading_fa: 'توانایی و اجازه', body_fa: 'can برای توانایی و اجازه غیررسمی، could برای گذشته یا حالت مؤدبانه‌تر، و may برای اجازه رسمی به‌کار می‌رود.', examples: [{ en: 'Could you help me?', fa: 'می‌شود کمکم کنید؟' }, { en: 'May I come in?', fa: 'اجازه هست وارد شوم؟' }], tip_fa: 'could مؤدبانه‌تر از can است و در درخواست‌ها بهتر جواب می‌دهد.' },
+      { heading_fa: 'اجبار و توصیه', body_fa: 'must اجبار قوی و درونی، have to اجبار بیرونی، و should توصیه است. نکته مهم: mustn\u2019t یعنی ممنوع، اما don\u2019t have to یعنی لازم نیست.', examples: [{ en: 'You must stop at a red light.', fa: 'باید پشت چراغ قرمز بایستید.' }, { en: 'You don\u2019t have to come.', fa: 'لازم نیست بیایی.' }], tip_fa: 'تفاوت mustn\u2019t و don\u2019t have to را با هم اشتباه نگیرید.' },
+    ],
+    vocabulary: [
+      { word: 'allowed', meaning_fa: 'مجاز', example_en: 'Smoking is not allowed.', example_fa: 'سیگار کشیدن مجاز نیست.', part_of_speech: 'adjective' },
+      { word: 'advice', meaning_fa: 'توصیه', example_en: 'Can you give me some advice?', example_fa: 'می‌توانی به من توصیه‌ای بکنی؟', part_of_speech: 'noun' },
+      { word: 'necessary', meaning_fa: 'لازم', example_en: 'It is not necessary.', example_fa: 'لازم نیست.', part_of_speech: 'adjective' },
+      { word: 'ability', meaning_fa: 'توانایی', example_en: 'She has the ability to learn fast.', example_fa: 'توانایی یادگیری سریع دارد.', part_of_speech: 'noun' },
+      { word: 'permission', meaning_fa: 'اجازه', example_en: 'I need your permission.', example_fa: 'به اجازه شما نیاز دارم.', part_of_speech: 'noun' },
+      { word: 'forbidden', meaning_fa: 'ممنوع', example_en: 'Parking here is forbidden.', example_fa: 'پارک کردن اینجا ممنوع است.', part_of_speech: 'adjective' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'She can ___ three languages.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['to speak', 'speak', 'speaks', 'speaking'], correct_answer: 1, explanation_fa: 'بعد از افعال وجهی فعل ساده و بدون to می‌آید.', error_tag: 'modals' },
+      { kind: 'mcq', prompt: 'You ___ see a doctor about that cough.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['should', 'can', 'may', 'would'], correct_answer: 0, explanation_fa: 'برای توصیه از should استفاده می‌شود.', error_tag: 'modals' },
+      { kind: 'mcq', prompt: '___ you please open the window?', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['Must', 'Could', 'Should', 'Will can'], correct_answer: 1, explanation_fa: 'Could مؤدبانه‌ترین شکل درخواست است.', error_tag: 'modals' },
+      { kind: 'mcq', prompt: 'You ___ smoke in the hospital. It is forbidden.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['don\u2019t have to', 'mustn\u2019t', 'shouldn\u2019t have', 'couldn\u2019t'], correct_answer: 1, explanation_fa: 'mustn\u2019t یعنی ممنوع؛ don\u2019t have to یعنی لازم نیست.', error_tag: 'modals' },
+      { kind: 'mcq', prompt: 'We ___ hurry, we have plenty of time.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['mustn\u2019t', 'don\u2019t have to', 'can\u2019t', 'shouldn\u2019t have'], correct_answer: 1, explanation_fa: 'وقتی کاری لازم نیست از don\u2019t have to استفاده می‌شود.', error_tag: 'modals' },
+      { kind: 'mcq', prompt: 'When I was young, I ___ run very fast.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['can', 'could', 'must', 'should'], correct_answer: 1, explanation_fa: 'برای توانایی در گذشته از could استفاده می‌شود.', error_tag: 'modals' },
+    ],
+  },
+  conditionals: {
+    title: 'Conditional Sentences',
+    title_fa: 'جملات شرطی',
+    summary_fa: 'شرطی نوع اول، دوم و سوم — از احتمال واقعی تا حسرت گذشته.',
+    sections: [
+      { heading_fa: 'شرطی نوع اول: احتمال واقعی', body_fa: 'برای اتفاقی که واقعاً ممکن است بیفتد: If + حال ساده، will + فعل ساده. توجه کنید که بعد از if هرگز will نمی‌آید.', examples: [{ en: 'If it rains, we will stay home.', fa: 'اگر باران ببارد، خانه می‌مانیم.' }, { en: 'If you study, you will pass.', fa: 'اگر درس بخوانی، قبول می‌شوی.' }], tip_fa: 'اشتباه رایج فارسی‌زبانان: If it will rain — غلط است.' },
+      { heading_fa: 'شرطی نوع دوم: خیالی', body_fa: 'برای موقعیت غیرواقعی در حال: If + گذشته ساده، would + فعل ساده. با فعل to be معمولاً were برای همه فاعل‌ها می‌آید.', examples: [{ en: 'If I had more time, I would travel.', fa: 'اگر وقت بیشتری داشتم، سفر می‌کردم.' }, { en: 'If I were you, I would accept.', fa: 'اگر جای تو بودم، قبول می‌کردم.' }], tip_fa: 'If I was نیز شنیده می‌شود اما If I were رسمی‌تر و درست‌تر است.' },
+      { heading_fa: 'شرطی نوع سوم: حسرت گذشته', body_fa: 'برای چیزی که در گذشته اتفاق نیفتاد: If + had + قسمت سوم، would have + قسمت سوم.', examples: [{ en: 'If I had known, I would have come.', fa: 'اگر می‌دانستم، می‌آمدم.' }, { en: 'If she had studied, she would have passed.', fa: 'اگر درس خوانده بود، قبول می‌شد.' }], tip_fa: 'این ساختار همیشه درباره گذشته‌ای است که دیگر قابل تغییر نیست.' },
+    ],
+    vocabulary: [
+      { word: 'unless', meaning_fa: 'مگر اینکه', example_en: 'I will not go unless you come.', example_fa: 'نمی‌روم مگر اینکه تو بیایی.', part_of_speech: 'conjunction' },
+      { word: 'otherwise', meaning_fa: 'در غیر این صورت', example_en: 'Hurry, otherwise we will be late.', example_fa: 'عجله کن، وگرنه دیر می‌رسیم.', part_of_speech: 'adverb' },
+      { word: 'possible', meaning_fa: 'ممکن', example_en: 'It is possible to finish today.', example_fa: 'امروز تمام کردنش ممکن است.', part_of_speech: 'adjective' },
+      { word: 'imagine', meaning_fa: 'تصور کردن', example_en: 'Imagine you won the lottery.', example_fa: 'تصور کن در قرعه‌کشی برنده شدی.', part_of_speech: 'verb' },
+      { word: 'regret', meaning_fa: 'پشیمانی', example_en: 'I regret not going.', example_fa: 'از نرفتن پشیمانم.', part_of_speech: 'verb' },
+      { word: 'chance', meaning_fa: 'شانس، فرصت', example_en: 'There is a chance of rain.', example_fa: 'احتمال باران هست.', part_of_speech: 'noun' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'If it ___ tomorrow, we will cancel the trip.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['will rain', 'rains', 'rained', 'would rain'], correct_answer: 1, explanation_fa: 'در شرطی نوع اول بعد از if از حال ساده استفاده می‌شود.', error_tag: 'conditional_1' },
+      { kind: 'mcq', prompt: 'If I ___ rich, I would buy a house.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['am', 'were', 'will be', 'have been'], correct_answer: 1, explanation_fa: 'شرطی نوع دوم با گذشته ساده و were ساخته می‌شود.', error_tag: 'conditional_2' },
+      { kind: 'mcq', prompt: 'If she had left earlier, she ___ the train.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['would catch', 'would have caught', 'will catch', 'caught'], correct_answer: 1, explanation_fa: 'شرطی نوع سوم: would have + قسمت سوم فعل.', error_tag: 'conditional_3' },
+      { kind: 'mcq', prompt: 'You will not learn ___ you practise.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['unless', 'if', 'when', 'although'], correct_answer: 0, explanation_fa: 'unless یعنی «مگر اینکه» و خودش معنی منفی دارد.', error_tag: 'conditional_1' },
+      { kind: 'mcq', prompt: 'If I ___ about the meeting, I would have attended.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['knew', 'had known', 'know', 'would know'], correct_answer: 1, explanation_fa: 'برای گذشته غیرواقعی از had known استفاده می‌شود.', error_tag: 'conditional_3' },
+      { kind: 'mcq', prompt: 'If you heat water to 100°C, it ___.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['would boil', 'boils', 'will have boiled', 'boiled'], correct_answer: 1, explanation_fa: 'برای حقیقت علمی از شرطی نوع صفر (حال ساده) استفاده می‌شود.', error_tag: 'conditional_1' },
+    ],
+  },
+  plurals_countables: {
+    title: 'Countable and Uncountable Nouns',
+    title_fa: 'اسامی قابل شمارش و غیرقابل شمارش',
+    summary_fa: 'تفاوت much و many، a few و a little، و اسم‌هایی که هرگز جمع بسته نمی‌شوند.',
+    sections: [
+      { heading_fa: 'دو دسته اسم', body_fa: 'اسم قابل شمارش را می‌توان شمرد و جمع بست: book/books. اسم غیرقابل شمارش جمع بسته نمی‌شود: water، information، advice، money، furniture.', examples: [{ en: 'I need some information.', fa: 'به مقداری اطلاعات نیاز دارم.' }, { en: 'She gave me good advice.', fa: 'او توصیه خوبی به من کرد.' }], tip_fa: 'اشتباه بسیار رایج: informations و advices — هر دو غلط‌اند.' },
+      { heading_fa: 'much، many، a lot of', body_fa: 'many با قابل شمارش، much با غیرقابل شمارش، و a lot of با هر دو به‌کار می‌رود. در جملات مثبت معمولاً a lot of طبیعی‌تر است.', examples: [{ en: 'How many books do you have?', fa: 'چند کتاب داری؟' }, { en: 'How much time do we have?', fa: 'چقدر وقت داریم؟' }], tip_fa: 'در سؤال و منفی از much/many و در مثبت از a lot of استفاده کنید.' },
+      { heading_fa: 'a few و a little', body_fa: 'a few با اسم قابل شمارش جمع و a little با غیرقابل شمارش می‌آید. برای شمردن اسم غیرقابل شمارش از واحد کمک می‌گیریم: a piece of advice، a glass of water.', examples: [{ en: 'I have a few friends here.', fa: 'اینجا چند دوست دارم.' }, { en: 'Add a little salt.', fa: 'کمی نمک اضافه کن.' }], tip_fa: 'a piece of news یعنی «یک خبر»؛ a news غلط است.' },
+    ],
+    vocabulary: [
+      { word: 'information', meaning_fa: 'اطلاعات', example_en: 'This information is useful.', example_fa: 'این اطلاعات مفید است.', part_of_speech: 'noun' },
+      { word: 'furniture', meaning_fa: 'مبلمان', example_en: 'The furniture is new.', example_fa: 'مبلمان نو است.', part_of_speech: 'noun' },
+      { word: 'luggage', meaning_fa: 'چمدان و بار', example_en: 'My luggage is heavy.', example_fa: 'بارم سنگین است.', part_of_speech: 'noun' },
+      { word: 'progress', meaning_fa: 'پیشرفت', example_en: 'You have made good progress.', example_fa: 'پیشرفت خوبی داشته‌ای.', part_of_speech: 'noun' },
+      { word: 'equipment', meaning_fa: 'تجهیزات', example_en: 'The equipment is expensive.', example_fa: 'تجهیزات گران است.', part_of_speech: 'noun' },
+      { word: 'several', meaning_fa: 'چندین', example_en: 'I visited several cities.', example_fa: 'چندین شهر را دیدم.', part_of_speech: 'determiner' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'How ___ money do you need?', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['many', 'much', 'few', 'a lot'], correct_answer: 1, explanation_fa: 'money غیرقابل شمارش است پس much می‌گیرد.', error_tag: 'quantifiers' },
+      { kind: 'mcq', prompt: 'She gave me some useful ___.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['advices', 'advice', 'an advice', 'advise'], correct_answer: 1, explanation_fa: 'advice غیرقابل شمارش است و جمع بسته نمی‌شود.', error_tag: 'uncountable' },
+      { kind: 'mcq', prompt: 'There are ___ people in the room.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['much', 'a little', 'a few', 'a piece of'], correct_answer: 2, explanation_fa: 'people قابل شمارش جمع است پس a few می‌گیرد.', error_tag: 'quantifiers' },
+      { kind: 'mcq', prompt: 'I need ___ of information about this.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['a piece', 'a slice', 'a number', 'many'], correct_answer: 0, explanation_fa: 'برای شمردن information از a piece of استفاده می‌شود.', error_tag: 'uncountable' },
+      { kind: 'mcq', prompt: 'How ___ students are in your class?', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['much', 'many', 'a little', 'amount of'], correct_answer: 1, explanation_fa: 'students قابل شمارش است پس many می‌گیرد.', error_tag: 'quantifiers' },
+      { kind: 'mcq', prompt: 'We bought new ___ for the office.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['furnitures', 'furniture', 'a furniture', 'furnitures items'], correct_answer: 1, explanation_fa: 'furniture غیرقابل شمارش است.', error_tag: 'uncountable' },
+    ],
+  },
+  gerund_infinitive: {
+    title: 'Gerunds and Infinitives',
+    title_fa: 'اسم مصدر و مصدر با to',
+    summary_fa: 'کدام فعل‌ها ing می‌گیرند و کدام to — یکی از دشوارترین بخش‌ها برای فارسی‌زبانان.',
+    sections: [
+      { heading_fa: 'افعالی که ing می‌گیرند', body_fa: 'بعد از enjoy، avoid، finish، mind، suggest، practise و keep همیشه فعل ing می‌گیرد.', examples: [{ en: 'I enjoy reading books.', fa: 'از کتاب خواندن لذت می‌برم.' }, { en: 'Would you mind waiting?', fa: 'اشکالی ندارد صبر کنید؟' }], tip_fa: 'بعد از تمام حروف اضافه هم فعل ing می‌گیرد: good at swimming.' },
+      { heading_fa: 'افعالی که to می‌گیرند', body_fa: 'بعد از want، decide، hope، plan، promise، need و agree مصدر با to می‌آید.', examples: [{ en: 'She decided to leave early.', fa: 'تصمیم گرفت زود برود.' }, { en: 'I want to improve my English.', fa: 'می‌خواهم انگلیسی‌ام را بهتر کنم.' }], tip_fa: 'برای بیان هدف همیشه از to استفاده کنید: I came here to learn.' },
+      { heading_fa: 'هر دو، اما با معنی متفاوت', body_fa: 'بعضی افعال هر دو را می‌پذیرند ولی معنی عوض می‌شود: stop smoking یعنی ترک کردن، اما stop to smoke یعنی توقف برای سیگار کشیدن.', examples: [{ en: 'He stopped smoking last year.', fa: 'پارسال سیگار را ترک کرد.' }, { en: 'He stopped to smoke.', fa: 'ایستاد تا سیگار بکشد.' }], tip_fa: 'remember doing یعنی خاطره؛ remember to do یعنی فراموش نکردن.' },
+    ],
+    vocabulary: [
+      { word: 'avoid', meaning_fa: 'اجتناب کردن', example_en: 'Avoid making the same mistake.', example_fa: 'از تکرار همان اشتباه اجتناب کن.', part_of_speech: 'verb' },
+      { word: 'practise', meaning_fa: 'تمرین کردن', example_en: 'I practise speaking daily.', example_fa: 'هر روز مکالمه تمرین می‌کنم.', part_of_speech: 'verb' },
+      { word: 'decide', meaning_fa: 'تصمیم گرفتن', example_en: 'They decided to move.', example_fa: 'تصمیم گرفتند نقل مکان کنند.', part_of_speech: 'verb' },
+      { word: 'manage', meaning_fa: 'موفق شدن', example_en: 'She managed to finish on time.', example_fa: 'توانست به‌موقع تمام کند.', part_of_speech: 'verb' },
+      { word: 'consider', meaning_fa: 'در نظر گرفتن', example_en: 'We are considering moving.', example_fa: 'به نقل مکان فکر می‌کنیم.', part_of_speech: 'verb' },
+      { word: 'refuse', meaning_fa: 'امتناع کردن', example_en: 'He refused to answer.', example_fa: 'از پاسخ دادن امتناع کرد.', part_of_speech: 'verb' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'I enjoy ___ to music.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['to listen', 'listening', 'listen', 'listened'], correct_answer: 1, explanation_fa: 'بعد از enjoy فعل ing می‌گیرد.', error_tag: 'gerund_infinitive' },
+      { kind: 'mcq', prompt: 'She decided ___ a new job.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['finding', 'to find', 'find', 'found'], correct_answer: 1, explanation_fa: 'بعد از decide مصدر با to می‌آید.', error_tag: 'gerund_infinitive' },
+      { kind: 'mcq', prompt: 'He is good at ___ problems.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['solve', 'to solve', 'solving', 'solved'], correct_answer: 2, explanation_fa: 'بعد از حرف اضافه at فعل ing می‌گیرد.', error_tag: 'gerund_infinitive' },
+      { kind: 'mcq', prompt: 'I came to this class ___ English.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['for learn', 'for learning', 'to learn', 'learning'], correct_answer: 2, explanation_fa: 'برای بیان هدف از to + فعل ساده استفاده می‌شود.', error_tag: 'infinitive_purpose' },
+      { kind: 'mcq', prompt: 'Would you mind ___ the door?', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['to close', 'closing', 'close', 'closed'], correct_answer: 1, explanation_fa: 'بعد از mind فعل ing می‌گیرد.', error_tag: 'gerund_infinitive' },
+      { kind: 'mcq', prompt: 'Remember ___ the lights before you leave.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['turning off', 'to turn off', 'turn off', 'turned off'], correct_answer: 1, explanation_fa: 'remember to do یعنی فراموش نکردن انجام کاری.', error_tag: 'gerund_infinitive' },
+    ],
+  },
+  passive_voice: {
+    title: 'The Passive Voice',
+    title_fa: 'جملات مجهول',
+    summary_fa: 'وقتی کارِ انجام‌شده مهم‌تر از انجام‌دهنده است — ساختاری پرکاربرد در متون رسمی.',
+    sections: [
+      { heading_fa: 'ساختار مجهول', body_fa: 'مجهول با be + قسمت سوم فعل ساخته می‌شود و زمان جمله را فعل be نشان می‌دهد: is written، was written، will be written.', examples: [{ en: 'The letter was written yesterday.', fa: 'نامه دیروز نوشته شد.' }, { en: 'English is spoken here.', fa: 'اینجا انگلیسی صحبت می‌شود.' }], tip_fa: 'فقط افعال دارای مفعول می‌توانند مجهول شوند.' },
+      { heading_fa: 'چه زمانی مجهول؟', body_fa: 'وقتی فاعل نامعلوم یا بی‌اهمیت است، یا وقتی می‌خواهیم روی نتیجه تمرکز کنیم. در متون علمی و خبری بسیار رایج است.', examples: [{ en: 'My bike was stolen.', fa: 'دوچرخه‌ام دزدیده شد.' }, { en: 'The results were published.', fa: 'نتایج منتشر شد.' }], tip_fa: 'اگر فاعل مهم باشد با by می‌آید: written by Hafez.' },
+      { heading_fa: 'زمان‌های مختلف', body_fa: 'حال ساده: is made. گذشته ساده: was made. حال کامل: has been made. آینده: will be made. مودال: must be made.', examples: [{ en: 'The road has been repaired.', fa: 'جاده تعمیر شده است.' }, { en: 'It must be finished today.', fa: 'باید امروز تمام شود.' }], tip_fa: 'اشتباه رایج: The window broke by him — درستش was broken by him است.' },
+    ],
+    vocabulary: [
+      { word: 'produce', meaning_fa: 'تولید کردن', example_en: 'These cars are produced in Iran.', example_fa: 'این ماشین‌ها در ایران تولید می‌شوند.', part_of_speech: 'verb' },
+      { word: 'discover', meaning_fa: 'کشف کردن', example_en: 'Penicillin was discovered in 1928.', example_fa: 'پنی‌سیلین در ۱۹۲۸ کشف شد.', part_of_speech: 'verb' },
+      { word: 'deliver', meaning_fa: 'تحویل دادن', example_en: 'The package was delivered.', example_fa: 'بسته تحویل داده شد.', part_of_speech: 'verb' },
+      { word: 'repair', meaning_fa: 'تعمیر کردن', example_en: 'My car is being repaired.', example_fa: 'ماشینم در حال تعمیر است.', part_of_speech: 'verb' },
+      { word: 'announce', meaning_fa: 'اعلام کردن', example_en: 'The winner was announced.', example_fa: 'برنده اعلام شد.', part_of_speech: 'verb' },
+      { word: 'invent', meaning_fa: 'اختراع کردن', example_en: 'The phone was invented in 1876.', example_fa: 'تلفن در ۱۸۷۶ اختراع شد.', part_of_speech: 'verb' },
+    ],
+    exercises: [
+      { kind: 'mcq', prompt: 'The window ___ by the storm.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['broke', 'was broken', 'has broke', 'is breaking'], correct_answer: 1, explanation_fa: 'مجهول گذشته: was + قسمت سوم فعل.', error_tag: 'passive_voice' },
+      { kind: 'mcq', prompt: 'English ___ in many countries.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['speaks', 'is spoken', 'is speaking', 'spoken'], correct_answer: 1, explanation_fa: 'مجهول حال ساده: is + قسمت سوم فعل.', error_tag: 'passive_voice' },
+      { kind: 'mcq', prompt: 'The report ___ tomorrow.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['will publish', 'will be published', 'will publishing', 'is publish'], correct_answer: 1, explanation_fa: 'مجهول آینده: will be + قسمت سوم فعل.', error_tag: 'passive_voice' },
+      { kind: 'mcq', prompt: 'This bridge ___ in 1990.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['built', 'was built', 'has built', 'is building'], correct_answer: 1, explanation_fa: 'زمان مشخص گذشته با مجهول was built می‌آید.', error_tag: 'passive_voice' },
+      { kind: 'mcq', prompt: 'The homework must ___ before Friday.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['finish', 'be finished', 'finished', 'to finish'], correct_answer: 1, explanation_fa: 'بعد از فعل وجهی، مجهول به شکل be + قسمت سوم می‌آید.', error_tag: 'passive_voice' },
+      { kind: 'mcq', prompt: 'The letter has ___ sent already.', prompt_fa: 'گزینه درست را انتخاب کنید.', options: ['been', 'be', 'being', 'was'], correct_answer: 0, explanation_fa: 'مجهول حال کامل: has been + قسمت سوم فعل.', error_tag: 'passive_voice' },
+    ],
+  },
 };
 
 const TOPIC_MAP: Record<SkillKind, string[]> = {
-  grammar: ['past_simple', 'present_perfect', 'articles'],
-  vocabulary: ['daily_conversation', 'articles'],
-  listening: ['daily_conversation'],
-  speaking: ['daily_conversation'],
-  reading: ['present_perfect', 'articles'],
-  writing: ['articles', 'past_simple'],
+  grammar: ['past_simple', 'present_perfect', 'articles', 'prepositions',
+            'comparatives', 'modals', 'conditionals', 'plurals_countables',
+            'gerund_infinitive', 'passive_voice'],
+  vocabulary: ['daily_conversation', 'articles', 'plurals_countables',
+                'prepositions', 'comparatives'],
+  listening: ['daily_conversation', 'modals', 'prepositions'],
+  speaking: ['daily_conversation', 'modals', 'comparatives', 'conditionals'],
+  reading: ['present_perfect', 'articles', 'passive_voice', 'conditionals'],
+  writing: ['articles', 'past_simple', 'passive_voice', 'gerund_infinitive',
+            'conditionals', 'plurals_countables'],
 };
 
-export function localLesson(skill: SkillKind, level: CefrLevel, hintTag?: string) {
-  let key = hintTag && LESSON_TEMPLATES[hintTag] ? hintTag : undefined;
+/**
+ * Maps an error tag from mistakes_memory onto the lesson that actually
+ * teaches it.
+ *
+ * Without this, a weakness like `nuance` or `spelling` found no template
+ * and silently fell through to a random pick — which is why learners saw
+ * the same two lessons over and over.
+ */
+const TAG_TO_TEMPLATE: Record<string, string> = {
+  past_simple: 'past_simple',
+  present_simple: 'past_simple',
+  irregular_verb: 'past_simple',
+  verb_to_be: 'past_simple',
+  subject_verb_agreement: 'past_simple',
+
+  present_perfect: 'present_perfect',
+  since_for: 'present_perfect',
+  future_perfect: 'present_perfect',
+
+  article: 'articles',
+  capitalization: 'articles',
+  capital_i: 'articles',
+
+  preposition: 'prepositions',
+  infinitive_purpose: 'gerund_infinitive',
+  gerund_infinitive: 'gerund_infinitive',
+
+  comparatives: 'comparatives',
+  ed_ing_adjectives: 'comparatives',
+
+  modals: 'modals',
+  verb_choice: 'modals',
+  functional_language: 'daily_conversation',
+  collocations: 'daily_conversation',
+  phrasal_verbs: 'daily_conversation',
+  daily_words: 'daily_conversation',
+  antonyms: 'daily_conversation',
+
+  conditional_1: 'conditionals',
+  conditional_2: 'conditionals',
+  conditional_3: 'conditionals',
+  inverted_conditional: 'conditionals',
+  unreal_past: 'conditionals',
+
+  quantifiers: 'plurals_countables',
+  uncountable: 'plurals_countables',
+
+  passive_voice: 'passive_voice',
+  reported_speech: 'passive_voice',
+
+  word_order: 'gerund_infinitive',
+  double_negative: 'modals',
+  inversion: 'conditionals',
+
+  spelling: 'daily_conversation',
+  punctuation: 'articles',
+  linkers: 'conditionals',
+  advanced_vocab: 'daily_conversation',
+  register: 'passive_voice',
+  style: 'passive_voice',
+  tone: 'daily_conversation',
+  nuance: 'daily_conversation',
+  detail_reading: 'present_perfect',
+  inference: 'present_perfect',
+  concession: 'conditionals',
+  vowel_sounds: 'daily_conversation',
+  there_be: 'plurals_countables',
+};
+
+/** The lesson template that teaches a given error tag, if any. */
+export function templateForTag(tag: string): string | undefined {
+  if (LESSON_TEMPLATES[tag]) return tag;
+  const mapped = TAG_TO_TEMPLATE[tag];
+  return mapped && LESSON_TEMPLATES[mapped] ? mapped : undefined;
+}
+
+export function allTemplateKeys(): string[] {
+  return Object.keys(LESSON_TEMPLATES);
+}
+
+export function localLesson(
+  skill: SkillKind,
+  level: CefrLevel,
+  hintTag?: string,
+  /** template keys the learner already has, so we stop repeating them */
+  exclude: string[] = []
+) {
+  // 1. an exact template, or the one that teaches this error tag
+  let key = hintTag ? templateForTag(hintTag) : undefined;
+
+  // 2. otherwise pick from the skill pool, avoiding what they already have
   if (!key) {
-    const pool = TOPIC_MAP[skill] ?? ['past_simple'];
-    key = pool[Math.floor(Math.random() * pool.length)];
+    const pool = TOPIC_MAP[skill] ?? allTemplateKeys();
+    const fresh = pool.filter((k) => !exclude.includes(k));
+    const candidates = fresh.length ? fresh : pool;
+    key = candidates[Math.floor(Math.random() * candidates.length)];
   }
+
   const t = LESSON_TEMPLATES[key];
   return {
     ...t,

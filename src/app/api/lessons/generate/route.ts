@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, generateLesson } from '@/lib/ai/service';
+import { templateForTag } from '@/lib/ai/local-engine';
 import type { CefrLevel, SkillKind } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -34,21 +35,62 @@ export async function POST(req: Request) {
     let skill: SkillKind = body.skill ?? ctx.weakestSkill ?? 'grammar';
     let topic = body.topic;
 
-    // AI Error Intelligence: build the lesson around the top weakness
+    // What the learner already has. Previously this was never consulted,
+    // so every generation could return the same lesson again.
+    const { data: existing } = await supabase
+      .from('lessons')
+      .select('topic')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const recentTopics = (existing ?? [])
+      .map((l) => l.topic)
+      .filter((t): t is string => Boolean(t));
+
+    // Map each stored topic onto the template it actually resolves to,
+    // so "nuance" and "tone" are recognised as the same lesson.
+    const usedTemplates = Array.from(
+      new Set(recentTopics.map((t) => templateForTag(t)).filter((t): t is string => Boolean(t)))
+    );
+
+    // AI Error Intelligence: build the lesson around a weakness — but
+    // rotate through them instead of always taking the most frequent
+    // one, which is what made the same lesson come back every time.
     if (!topic && (body.from_weakness ?? true) && ctx.weaknesses?.length) {
-      const top = ctx.weaknesses[0];
-      topic = top.tag;
+      const unaddressed = ctx.weaknesses.filter((w) => {
+        const tpl = templateForTag(w.tag);
+        return tpl && !usedTemplates.includes(tpl);
+      });
+
+      const chosen = unaddressed.length
+        ? unaddressed[0]
+        : ctx.weaknesses[Math.floor(Math.random() * ctx.weaknesses.length)];
+
+      topic = chosen.tag;
+
       const { data: mistake } = await supabase
         .from('mistakes_memory')
         .select('skill')
         .eq('user_id', user.id)
-        .eq('error_tag', top.tag)
+        .eq('error_tag', chosen.tag)
         .maybeSingle();
       if (mistake?.skill) skill = mistake.skill as SkillKind;
     }
-    topic ??= 'daily_conversation';
 
-    const generated = await generateLesson(skill, level, topic, ctx);
+    // No weakness to work from: let the engine choose something the
+    // learner has not seen, rather than defaulting to one fixed topic.
+    const generated = await generateLesson(
+      skill,
+      level,
+      topic ?? '',
+      ctx,
+      usedTemplates
+    );
+
+    // Record the template that was actually produced, not the raw error
+    // tag, so future de-duplication compares like with like.
+    topic = generated.topic ?? topic ?? 'daily_conversation';
 
     const { data: lesson, error } = await supabase
       .from('lessons')

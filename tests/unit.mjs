@@ -613,6 +613,87 @@ console.log('\n15) Group chat — local fallback guide & scenarios');
   ok('cooldown is 2 seconds', grp.MESSAGE_COOLDOWN_MS === 2000);
 }
 
+// ------------------------------------------------------------
+console.log('\n16) Lesson variety (regression: only 2 lessons ever appeared)');
+{
+  // Bug report: "در ساخت درس جدید فقط دو نمونه تکراری رو انجام میده".
+  // Root causes were (a) only 4 templates, (b) most error tags had no
+  // template so they fell through to a random pick, (c) no memory of
+  // what the learner already had.
+
+  ok('template catalogue has grown past 4', engine.allTemplateKeys().length >= 10,
+     `${engine.allTemplateKeys().length}`);
+
+  // (a) repeated generation must vary
+  const used = [];
+  const titles = [];
+  for (let i = 0; i < 12; i++) {
+    const l = engine.localLesson('grammar', 'B1', undefined, used);
+    titles.push(l.title);
+    if (!used.includes(l.topic)) used.push(l.topic);
+  }
+  ok('12 generations yield at least 8 distinct lessons',
+     new Set(titles).size >= 8, `${new Set(titles).size}`);
+
+  // (b) every error tag the app can record must resolve to a lesson
+  const REAL_TAGS = [
+    'past_simple','present_simple','present_perfect','future_perfect','verb_to_be',
+    'subject_verb_agreement','article','preposition','word_order','spelling',
+    'punctuation','capitalization','capital_i','comparatives','quantifiers',
+    'uncountable','since_for','conditional_1','conditional_3','inverted_conditional',
+    'passive_voice','reported_speech','gerund_infinitive','phrasal_verbs',
+    'collocations','advanced_vocab','ed_ing_adjectives','linkers','inversion',
+    'unreal_past','modals','verb_choice','register','style','tone','nuance',
+    'functional_language','infinitive_purpose','there_be','antonyms','daily_words',
+    'detail_reading','inference','concession','vowel_sounds','irregular_verb',
+    'double_negative',
+  ];
+  const unmapped = REAL_TAGS.filter((t) => !engine.templateForTag(t));
+  ok('every recorded error tag maps to a lesson', unmapped.length === 0,
+     `unmapped: ${unmapped.join(', ')}`);
+
+  // (c) the exclusion list is honoured
+  const already = ['past_simple', 'present_perfect', 'articles'];
+  const after = new Set();
+  for (let i = 0; i < 40; i++) {
+    after.add(engine.localLesson('grammar', 'B1', undefined, already).topic);
+  }
+  ok('already-seen lessons are not repeated',
+     ![...after].some((k) => already.includes(k)), [...after].join(','));
+
+  // and it degrades gracefully once everything is seen
+  const exhausted = engine.localLesson('grammar', 'B1', undefined, engine.allTemplateKeys());
+  ok('still returns a lesson when all are seen', !!exhausted?.title);
+
+  // an explicit weakness must still win over variety
+  ok('explicit tag still selects its own lesson',
+     engine.localLesson('grammar', 'B1', 'past_simple').topic === 'past_simple');
+  ok('mapped tag selects the teaching lesson',
+     engine.localLesson('grammar', 'B1', 'quantifiers').topic === 'plurals_countables');
+
+  // every skill must offer real choice
+  for (const sk of ['grammar','vocabulary','listening','speaking','reading','writing']) {
+    const seen = new Set();
+    const u2 = [];
+    for (let i = 0; i < 40; i++) {
+      const l = engine.localLesson(sk, 'B1', undefined, u2);
+      seen.add(l.title);
+      if (!u2.includes(l.topic)) u2.push(l.topic);
+    }
+    ok(`${sk.padEnd(11)} offers 3+ distinct lessons`, seen.size >= 3, `${seen.size}`);
+  }
+
+  // every template must be complete, not a stub
+  for (const key of engine.allTemplateKeys()) {
+    const l = engine.localLesson('grammar', 'B1', key);
+    ok(`template ${key.padEnd(20)} is complete`,
+       l.sections.length >= 3 && l.vocabulary.length >= 6 && l.exercises.length >= 6 &&
+       /[\u0600-\u06FF]/.test(l.title_fa) &&
+       l.exercises.every((e) => e.correct_answer >= 0 && e.correct_answer < e.options.length),
+       `${l.sections?.length}s/${l.vocabulary?.length}v/${l.exercises?.length}e`);
+  }
+}
+
 console.log(`\n${'='.repeat(50)}`);
 console.log(`  ✅ passed: ${pass}    ❌ failed: ${fail}`);
 console.log('='.repeat(50) + '\n');

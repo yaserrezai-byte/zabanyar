@@ -301,7 +301,9 @@ export async function generateLesson(
   skill: SkillKind,
   level: CefrLevel,
   topic: string,
-  ctx: LearnerContext
+  ctx: LearnerContext,
+  /** topics the learner already has, so the local engine varies its output */
+  recentTopics: string[] = []
 ): Promise<GeneratedLesson> {
   if (AI_ENABLED) {
     try {
@@ -317,7 +319,7 @@ export async function generateLesson(
       console.error('[ai] generateLesson fallback:', err);
     }
   }
-  const local = localLesson(skill, level, topic);
+  const local = localLesson(skill, level, topic, recentTopics);
   return { ...local, source: 'local' } as GeneratedLesson;
 }
 
