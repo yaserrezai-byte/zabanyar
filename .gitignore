@@ -45,3 +45,10 @@ next-env.d.ts
 .env*.local
 .vercel
 !.env.example
+
+# Android signing material — NEVER commit
+dist-android/*.keystore
+dist-android/*.jks
+dist-android/keystore-password.txt
+dist-android/*.apk
+dist-android/*.aab
