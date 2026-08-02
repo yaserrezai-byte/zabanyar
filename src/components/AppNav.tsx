@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/dashboard', label: 'داشبورد', icon: '🏠' },
   { href: '/lessons', label: 'درس‌ها', icon: '📚' },
   { href: '/tutor', label: 'مربی هوشمند', icon: '💬' },
+  { href: '/group-conversation', label: 'گفت‌وگوی گروهی', icon: '👥' },
   { href: '/vocabulary', label: 'مرور لغات', icon: '🔁' },
   { href: '/pronunciation', label: 'تمرین تلفظ', icon: '🎤' },
   { href: '/assignments', label: 'تکالیف', icon: '✍️' },

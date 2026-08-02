@@ -59,6 +59,7 @@ console.log('1) Schema integrity');
     'assignments', 'submissions', 'mistakes_memory', 'vocabulary_memory',
     'conversations', 'messages', 'learning_history', 'progress_reports', 'ai_memory',
     'pronunciation_attempts', 'badges', 'user_badges',
+    'group_sessions', 'group_participants', 'group_messages',
   ];
   for (const t of tables) {
     const { error } = await admin.from(t).select('*').limit(1);
@@ -299,7 +300,7 @@ console.log('\n11) Storage buckets');
 console.log('\n12) Anonymous access');
 {
   const anon = createClient(URL_, ANON, { auth: { persistSession: false } });
-  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory', 'pronunciation_attempts', 'user_badges']) {
+  for (const t of ['profiles', 'lessons', 'messages', 'submissions', 'vocabulary_memory', 'pronunciation_attempts', 'user_badges', 'group_messages']) {
     const { data } = await anon.from(t).select('id').limit(1);
     ok(`anonymous read blocked on ${t.padEnd(18)}`, (data ?? []).length === 0);
   }
@@ -717,6 +718,191 @@ console.log('\n12d) Gamification — badges & leaderboard privacy');
     .select('streak_days').eq('id', fresh.id).single();
   ok('same-day activity does not inflate the streak', sameDay.streak_days === 3,
      `got ${sameDay.streak_days}`);
+}
+
+// ------------------------------------------------------------
+console.log('\n12e) Group conversation — session isolation');
+{
+  // Two learners inside a room, one complete outsider.
+  const memberA  = await makeUser('grpA');
+  const memberB  = await makeUser('grpB');
+  const outsider = await makeUser('grpOut');
+
+  for (const u of [memberA, memberB, outsider]) {
+    await admin.from('profiles').update({ current_level: 'B1' }).eq('id', u.id);
+  }
+
+  const aDb2 = await signIn(memberA);
+  const bDb2 = await signIn(memberB);
+  const oDb  = await signIn(outsider);
+
+  // A opens a room via the matchmaking function
+  // Isolated scenario id so this suite never shares a room with the
+  // live API test or with users left over from a previous run.
+  const SCEN = `rls_probe_${Date.now()}`;
+  const { data: sessA, error: joinErr } = await aDb2.rpc('join_group_session', {
+    p_scenario: SCEN, p_topic: 'At the coffee shop',
+    p_topic_fa: 'در کافی‌شاپ', p_level: 'B1', p_max: 4,
+  });
+  ok('learner can open a group session', !joinErr && !!sessA, joinErr?.message);
+
+  // B is matched into the SAME room
+  const { data: sessB } = await bDb2.rpc('join_group_session', {
+    p_scenario: SCEN, p_topic: 'At the coffee shop',
+    p_topic_fa: 'در کافی‌شاپ', p_level: 'B1', p_max: 4,
+  });
+  ok('matchmaking places both learners in one room', sessB === sessA, `${sessA} vs ${sessB}`);
+
+  const { data: sess } = await admin.from('group_sessions').select('status').eq('id', sessA).single();
+  ok('room becomes active with two learners', sess.status === 'active', sess.status);
+
+  // ---- members can talk ----
+  const { error: msgErr } = await aDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: memberA.id,
+    sender_name: 'A', content: 'Hello everyone!',
+  });
+  ok('member can post a message', !msgErr, msgErr?.message);
+
+  await new Promise((r) => setTimeout(r, 2100));  // clear the 2s rate limit
+  const { data: readByB } = await bDb2.from('group_messages').select('id').eq('session_id', sessA);
+  ok('the other member can read it', (readByB ?? []).length >= 1);
+
+  // ================= THE CORE REQUIREMENT =================
+  const { data: outsiderRead } = await oDb.from('group_messages')
+    .select('id, content').eq('session_id', sessA);
+  ok('OUTSIDER CANNOT READ the room messages', (outsiderRead ?? []).length === 0,
+     JSON.stringify(outsiderRead));
+
+  const { error: outsiderWrite } = await oDb.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: outsider.id,
+    sender_name: 'Intruder', content: 'let me in',
+  });
+  ok('OUTSIDER CANNOT WRITE to the room', !!outsiderWrite);
+
+  const { data: outsiderAll } = await oDb.from('group_messages').select('id');
+  ok('outsider sees no group messages at all', (outsiderAll ?? []).length === 0);
+
+  // ---- spoofing another member ----
+  const { error: spoof } = await bDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: memberA.id,
+    sender_name: 'A', content: 'impersonation',
+  });
+  ok('member cannot post as another member', !!spoof);
+
+  // ---- forging an AI turn ----
+  const { error: fakeAi } = await aDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'ai', sender_id: null,
+    sender_name: 'راهنما', content: 'fake guidance',
+  });
+  ok('member cannot forge an AI guide message', !!fakeAi);
+
+  // ---- history is append-only ----
+  const { data: firstMsg } = await admin.from('group_messages')
+    .select('id, content').eq('session_id', sessA).limit(1).single();
+  await aDb2.from('group_messages').update({ content: 'edited!' }).eq('id', firstMsg.id);
+  const { data: afterEdit } = await admin.from('group_messages')
+    .select('content').eq('id', firstMsg.id).single();
+  ok('messages cannot be edited after the fact', afterEdit.content === firstMsg.content);
+
+  // ---- rate limit is enforced in the DATABASE, not just the API ----
+  const { error: fast1 } = await bDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: memberB.id,
+    sender_name: 'B', content: 'first message',
+  });
+  const { error: fast2 } = await bDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: memberB.id,
+    sender_name: 'B', content: 'instant second message',
+  });
+  ok('first message accepted', !fast1, fast1?.message);
+  ok('DB rejects a second message within 2s (bypassing the API)', !!fast2);
+
+  // ---- participants ----
+  const { data: outsiderPeek } = await oDb.from('group_participants')
+    .select('user_id').eq('session_id', sessA);
+  ok('outsider cannot list the participants', (outsiderPeek ?? []).length === 0);
+
+  const { error: sneakJoin } = await oDb.from('group_participants').insert({
+    session_id: sessA, user_id: memberA.id,
+  });
+  ok('cannot add someone else to a room', !!sneakJoin);
+
+  // A waiting room IS discoverable (needed for matchmaking) but its
+  // contents are not.
+  const { data: discoverable } = await oDb.from('group_sessions')
+    .select('id, status').eq('status', 'waiting');
+  ok('waiting rooms are discoverable for matchmaking', Array.isArray(discoverable));
+
+  const { data: activeRoom } = await oDb.from('group_sessions').select('id').eq('id', sessA);
+  ok('an ACTIVE room is hidden from outsiders', (activeRoom ?? []).length === 0);
+
+  // ---- teacher oversight ----
+  const teacherG = await makeUser('grpTeacher');
+  await admin.from('profiles').update({ role: 'teacher' }).eq('id', teacherG.id);
+  await admin.from('profiles').update({ teacher_id: teacherG.id }).eq('id', memberA.id);
+  const tDb2 = await signIn(teacherG);
+
+  const { data: teacherRead } = await tDb2.from('group_messages')
+    .select('id').eq('session_id', sessA);
+  ok("teacher can observe a room containing their student", (teacherRead ?? []).length >= 1);
+
+  const strangerTeacher = await makeUser('grpTeacher2');
+  await admin.from('profiles').update({ role: 'teacher' }).eq('id', strangerTeacher.id);
+  const t2Db = await signIn(strangerTeacher);
+  const { data: strangerRead } = await t2Db.from('group_messages')
+    .select('id').eq('session_id', sessA);
+  ok('an unrelated teacher cannot observe the room', (strangerRead ?? []).length === 0);
+
+  // ---- leaving ----
+  const { error: leaveErr } = await bDb2.rpc('leave_group_session', { p_session: sessA });
+  ok('member can leave', !leaveErr, leaveErr?.message);
+
+  const { data: gone } = await admin.from('group_participants')
+    .select('left_at').eq('session_id', sessA).eq('user_id', memberB.id).single();
+  ok('  left_at is stamped', !!gone.left_at);
+
+  const { data: stillOpen } = await admin.from('group_sessions')
+    .select('status').eq('id', sessA).single();
+  // Under the seat-based matchmaking of 0008/0009 a room with one
+  // learner left stays joinable; only an empty room ends.
+  ok('  room stays joinable with one learner left', stillOpen.status !== 'ended',
+     stillOpen.status);
+
+  // a departed member keeps read access to what they took part in...
+  const { data: historyAfterLeave } = await bDb2.from('group_messages')
+    .select('id').eq('session_id', sessA);
+  ok('departed member can still read the history', (historyAfterLeave ?? []).length >= 1);
+
+  // ...but can no longer speak
+  const { error: postAfterLeave } = await bDb2.from('group_messages').insert({
+    session_id: sessA, sender_type: 'user', sender_id: memberB.id,
+    sender_name: 'B', content: 'still here?',
+  });
+  ok('departed member can no longer post', !!postAfterLeave);
+
+  // ---- empty room ends ----
+  await aDb2.rpc('leave_group_session', { p_session: sessA });
+  const { data: ended } = await admin.from('group_sessions')
+    .select('status, ended_at').eq('id', sessA).single();
+  ok('empty room is marked ended', ended.status === 'ended', ended.status);
+  ok('  ended_at is stamped', !!ended.ended_at);
+
+  // ---- idle sweeper ----
+  const { data: sweepRoom } = await aDb2.rpc('join_group_session', {
+    p_scenario: `${SCEN}_sweep`, p_topic: 'Dinner', p_topic_fa: 'شام',
+    p_level: 'B1', p_max: 4,
+  });
+  await admin.from('group_participants')
+    .update({ last_seen_at: new Date(Date.now() - 30 * 60_000).toISOString() })
+    .eq('session_id', sweepRoom);
+  await admin.rpc('expire_idle_group_sessions', { idle_minutes: 10 });
+  const { data: swept } = await admin.from('group_sessions')
+    .select('status').eq('id', sweepRoom).single();
+  ok('idle sweeper ends abandoned rooms', swept.status === 'ended', swept.status);
+
+  // ---- realtime publication (was empty before 0007) ----
+  const { data: pub } = await admin
+    .from('group_messages').select('id').limit(1);
+  ok('group tables are queryable for realtime replay', Array.isArray(pub));
 }
 
 // ------------------------------------------------------------

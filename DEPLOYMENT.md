@@ -49,6 +49,75 @@ push به develop   →  استقرار Preview خودکار
 
 ---
 
+## 📡 Realtime (گفت‌وگوی گروهی)
+
+<div dir="rtl">
+
+قابلیت **گفت‌وگوی گروهی** برای دریافت زنده پیام‌ها از Supabase Realtime استفاده می‌کند.
+
+### ✅ وضعیت فعلی: فعال است
+
+هیچ کار دستی لازم نیست. مایگریشن `0007_group_conversation.sql` جدول‌های گروهی را
+به‌طور خودکار به publication مربوط به Realtime اضافه می‌کند:
+
+</div>
+
+```sql
+alter publication supabase_realtime add table public.group_messages;
+alter publication supabase_realtime add table public.group_participants;
+alter publication supabase_realtime add table public.group_sessions;
+```
+
+<div dir="rtl">
+
+> ⚠️ **نکته‌ای که هنگام پیاده‌سازی پیدا شد:** publication به نام `supabase_realtime`
+> از قبل روی پروژه وجود داشت اما **هیچ جدولی داخلش نبود** — یعنی Realtime عملاً
+> هیچ رویدادی پخش نمی‌کرد. مایگریشن ۰۰۰۷ این را اصلاح کرد.
+
+### بررسی اینکه واقعاً فعال است
+
+در **Supabase → SQL Editor** این را اجرا کنید:
+
+</div>
+
+```sql
+select tablename from pg_publication_tables
+where pubname = 'supabase_realtime';
+```
+
+<div dir="rtl">
+
+باید هر سه جدول `group_messages`، `group_participants` و `group_sessions` را ببینید.
+
+از طریق پنل هم قابل بررسی است:
+**Supabase → Database → Replication → `supabase_realtime`**
+
+### اگر روی پروژه‌ی جدیدی مستقر می‌کنید
+
+اگر Realtime روی پروژه‌ی تازه خاموش بود:
+
+۱. **Supabase → Project Settings → Realtime** را باز کنید و مطمئن شوید فعال است.
+۲. مایگریشن‌ها را به‌ترتیب اجرا کنید (۰۰۰۷ خودش جدول‌ها را اضافه می‌کند).
+۳. با کوئری بالا تأیید بگیرید.
+
+### محدودیت پلن رایگان
+
+| مورد | محدودیت |
+|---|---|
+| اتصال همزمان | ۲۰۰ |
+| پیام Realtime | ۲ میلیون در ماه |
+
+برای یک کلاس گروهی کوچک کاملاً کافی است. هر شرکت‌کننده در هر اتاق یک اتصال می‌گیرد.
+
+### نکته امنیتی
+
+Realtime همان RLS جدول را رعایت می‌کند: کاربری که عضو یک اتاق نیست، رویدادهای
+آن اتاق را دریافت نمی‌کند. این موضوع در `tests/rls.mjs` تست شده است.
+
+</div>
+
+---
+
 ## 🔐 اقدام امنیتی ضروری
 
 توکن‌هایی که در گفت‌وگو ارسال شدند در تاریخچه چت باقی می‌مانند. **لطفاً هر سه را باطل کنید** — همه کارهای لازم با آن‌ها انجام شده و دیگر مورد نیازی نیست:

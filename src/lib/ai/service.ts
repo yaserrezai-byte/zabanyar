@@ -16,6 +16,7 @@ import {
 import {
   COACH_SYSTEM,
   GRADER_SYSTEM,
+  GROUP_GUIDE_SYSTEM,
   LESSON_SYSTEM,
   TUTOR_SYSTEM,
   type LearnerContext,
@@ -26,6 +27,11 @@ import {
   scoreTranscript,
   type PronunciationScore,
 } from './pronunciation-engine';
+import {
+  localGuideTurn,
+  type GroupScenario,
+  type GuideReason,
+} from '@/lib/group-chat';
 
 // ------------------------------------------------------------
 // Build learner memory context from the database
@@ -409,4 +415,81 @@ export async function transcribeAndScore(
     source: 'heuristic',
     used_fallback: true,
   };
+}
+
+// ------------------------------------------------------------
+// Group conversation guide
+// ------------------------------------------------------------
+
+export interface GroupGuideResult {
+  content: string;
+  translation_fa: string;
+  corrections: Correction[];
+  source: 'ai' | 'local';
+}
+
+/**
+ * One turn from the AI conversation guide for a group room.
+ *
+ * Same contract as every other AI helper here: try the configured
+ * provider, fall back to the deterministic local guide on any failure
+ * so a live group session is never blocked by an external service.
+ */
+export async function groupGuideTurn(
+  reason: GuideReason,
+  scenario: GroupScenario | undefined,
+  opts: {
+    level: string;
+    participants: string[];
+    transcript: { name: string; content: string }[];
+    seed: number;
+  }
+): Promise<GroupGuideResult> {
+  if (AI_ENABLED) {
+    try {
+      const recent = opts.transcript
+        .slice(-12)
+        .map((m) => `${m.name}: ${m.content}`)
+        .join('\n');
+
+      const task =
+        reason === 'opening'
+          ? 'گفت‌وگو را شروع کن و یک سؤال باز بپرس.'
+          : reason === 'stalled'
+            ? 'گفت‌وگو متوقف شده است. با یک سؤال تازه دوباره آن را راه بینداز.'
+            : 'گفت‌وگو را ادامه بده: در صورت نیاز ملایم تصحیح کن و یک سؤال بپرس.';
+
+      const out = await chatJson<Omit<GroupGuideResult, 'source'>>(
+        [
+          {
+            role: 'system',
+            content: GROUP_GUIDE_SYSTEM(
+              scenario?.topic ?? 'free conversation',
+              opts.level,
+              opts.participants
+            ),
+          },
+          {
+            role: 'user',
+            content: `${task}\n\nگفت‌وگوی اخیر:\n${recent || '(هنوز پیامی نیست)'}`,
+          },
+        ],
+        { temperature: 0.8, maxTokens: 400 }
+      );
+
+      if (out?.content) {
+        return {
+          content: out.content,
+          translation_fa: out.translation_fa ?? '',
+          corrections: out.corrections ?? [],
+          source: 'ai',
+        };
+      }
+    } catch (err) {
+      console.error('[ai] groupGuideTurn fallback:', err);
+    }
+  }
+
+  const local = localGuideTurn(reason, scenario, opts.seed);
+  return { ...local, corrections: [] };
 }

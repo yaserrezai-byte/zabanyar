@@ -38,6 +38,7 @@ const engine = await load('src/lib/ai/local-engine.ts');
 const bank = await load('src/lib/ai/placement-bank.ts');
 const pron = await load('src/lib/ai/pronunciation-engine.ts');
 const game = await load('src/lib/gamification.ts');
+const grp  = await load('src/lib/group-chat.ts');
 
 // ------------------------------------------------------------
 console.log('1) Grammar rule engine');
@@ -489,6 +490,127 @@ console.log('\n12) Gamification — streak computation');
      C(['2026-08-02','2026-07-31','2026-08-01'], today) === 3);
   ok('stale history yields zero, not a stale streak',
      C(['2026-06-01','2026-06-02','2026-06-03'], today) === 0);
+}
+
+// ------------------------------------------------------------
+console.log('\n13) Group chat — content moderation');
+{
+  const M = grp.moderate;
+
+  ok('clean English passes', M('Hello everyone, how are you?').allowed);
+  ok('clean Persian passes', M('سلام به همه').allowed);
+  ok('empty message rejected', !M('   ').allowed);
+  ok('over-long message rejected', !M('a'.repeat(501)).allowed);
+
+  ok('English profanity blocked', !M('what the fuck is this').allowed);
+  ok('Persian profanity blocked', !M('برو بابا جنده').allowed);
+  ok('  rejection reason is Persian',
+     /[\u0600-\u06FF]/.test(M('you bitch').reason_fa || ''));
+
+  // evasion
+  ok('spaced-out profanity blocked', !M('f u c k you').allowed);
+  ok('dotted profanity blocked', !M('s.h.i.t').allowed);
+  ok('leetspeak profanity blocked', !M('sh1t').allowed);
+
+  ok('character flooding blocked', !M('aaaaaaaaaaaaaaaa').allowed);
+  ok('short repeats still allowed', M('haha so funny').allowed);
+
+  // must not over-block legitimate words containing substrings
+  ok('"classic" is not blocked', M('That was a classic mistake.').allowed);
+  ok('"analysis" is not blocked', M('Let us do an analysis.').allowed);
+  ok('"grass" is not blocked', M('The grass is green.').allowed);
+}
+
+// ------------------------------------------------------------
+console.log('\n14) Group chat — AI guide cadence');
+{
+  const S = grp.shouldGuideSpeak;
+  const base = {
+    messagesSinceAi: 0, msSinceAi: Infinity,
+    msSinceLastMessage: 0, activeParticipants: 2, totalMessages: 0,
+  };
+
+  ok('opens the room once two learners are present',
+     S({ ...base }) === 'opening');
+  // Regression: the route evaluates cadence AFTER storing the message,
+  // so totalMessages is already 1 when the room really opens.
+  ok('opens on the first stored message (real call order)',
+     S({ ...base, messagesSinceAi: 1, totalMessages: 1 }) === 'opening');
+  ok('does not open with only one learner',
+     S({ ...base, activeParticipants: 1 }) === 'none');
+  ok('does not re-open after it has spoken',
+     S({ ...base, msSinceAi: 60_000, messagesSinceAi: 1, totalMessages: 1 }) === 'none');
+  ok('does not treat a busy room as opening',
+     S({ ...base, messagesSinceAi: 2, totalMessages: 8 }) !== 'opening');
+
+  ok('stays quiet right after speaking',
+     S({ ...base, msSinceAi: 5_000, messagesSinceAi: 9, totalMessages: 9 }) === 'none');
+
+  ok('speaks after 4 turns in a 2-person room',
+     S({ ...base, msSinceAi: 60_000, messagesSinceAi: 4, totalMessages: 4 }) === 'interval');
+  ok('stays quiet at 3 turns',
+     S({ ...base, msSinceAi: 60_000, messagesSinceAi: 3, totalMessages: 3 }) === 'none');
+  ok('waits for 5 turns in a bigger room',
+     S({ ...base, msSinceAi: 60_000, messagesSinceAi: 4, totalMessages: 4, activeParticipants: 4 }) === 'none');
+  ok('  then speaks at 5',
+     S({ ...base, msSinceAi: 60_000, messagesSinceAi: 5, totalMessages: 5, activeParticipants: 4 }) === 'interval');
+
+  ok('revives a stalled room',
+     S({ ...base, msSinceAi: 60_000, msSinceLastMessage: 50_000, messagesSinceAi: 1, totalMessages: 3 }) === 'stalled');
+  ok('does not call a fresh room stalled',
+     S({ ...base, msSinceAi: 60_000, msSinceLastMessage: 50_000, totalMessages: 0 }) !== 'stalled');
+  ok('a brief pause is not a stall',
+     S({ ...base, msSinceAi: 60_000, msSinceLastMessage: 20_000, messagesSinceAi: 1, totalMessages: 3 }) === 'none');
+
+  // the guide must never dominate the room
+  ok('never speaks twice inside 20s regardless of turns',
+     S({ ...base, msSinceAi: 19_000, messagesSinceAi: 50, totalMessages: 50, msSinceLastMessage: 90_000 }) === 'none');
+}
+
+// ------------------------------------------------------------
+console.log('\n15) Group chat — local fallback guide & scenarios');
+{
+  const scen = grp.scenarioById('coffee_shop');
+  ok('scenario lookup works', scen?.id === 'coffee_shop');
+  ok('unknown scenario is undefined', grp.scenarioById('nope_xyz') === undefined);
+
+  for (const reason of ['opening', 'interval', 'stalled']) {
+    const turn = grp.localGuideTurn(reason, scen, 3);
+    ok(`local guide replies for "${reason}"`, turn.content.length > 0 && turn.source === 'local');
+    ok(`  "${reason}" has Persian translation`, /[\u0600-\u06FF]/.test(turn.translation_fa));
+    ok(`  "${reason}" content is English`, /[a-zA-Z]/.test(turn.content));
+  }
+
+  ok('local guide survives an unknown scenario',
+     grp.localGuideTurn('interval', undefined, 1).content.length > 0);
+  ok('different seeds give different nudges',
+     grp.localGuideTurn('interval', scen, 0).content !==
+     grp.localGuideTurn('interval', scen, 1).content);
+  ok('same seed is deterministic',
+     grp.localGuideTurn('interval', scen, 7).content ===
+     grp.localGuideTurn('interval', scen, 7).content);
+
+  // level gating
+  const a1 = grp.scenariosForLevel('A1').map((s) => s.id);
+  const c2 = grp.scenariosForLevel('C2').map((s) => s.id);
+  ok('A1 sees only beginner scenarios', a1.includes('coffee_shop') && !a1.includes('debate'));
+  ok('C2 sees every scenario', c2.length === grp.GROUP_SCENARIOS.length);
+  ok('B1 unlocks the interview but not the debate', (() => {
+    const b1 = grp.scenariosForLevel('B1').map((s) => s.id);
+    return b1.includes('job_interview') && !b1.includes('debate');
+  })());
+  ok('null level falls back to A1', grp.scenariosForLevel(null).every((s) => s.minLevel === 'A1'));
+
+  ok('every scenario has Persian metadata',
+     grp.GROUP_SCENARIOS.every((s) =>
+       /[\u0600-\u06FF]/.test(s.topic_fa) &&
+       /[\u0600-\u06FF]/.test(s.description_fa) &&
+       s.roles_fa.length >= 2));
+  ok('every scenario has conversation starters',
+     grp.GROUP_SCENARIOS.every((s) => s.starters.length >= 2));
+  ok('scenario ids are unique',
+     new Set(grp.GROUP_SCENARIOS.map((s) => s.id)).size === grp.GROUP_SCENARIOS.length);
+  ok('cooldown is 2 seconds', grp.MESSAGE_COOLDOWN_MS === 2000);
 }
 
 console.log(`\n${'='.repeat(50)}`);
