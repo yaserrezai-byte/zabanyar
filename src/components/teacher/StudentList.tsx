@@ -133,8 +133,8 @@ export default function StudentList({ students }: { students: StudentSummary[] }
               onClick={() => setActivity(t.key)}
               className="rounded-full border px-3 py-1.5 text-xs transition-all"
               style={{
-                borderColor: activity === t.key ? 'var(--color-brand-600)' : 'var(--border)',
-                background: activity === t.key ? 'var(--color-brand-600)' : 'transparent',
+                borderColor: activity === t.key ? 'var(--color-primary-600)' : 'var(--border)',
+                background: activity === t.key ? 'var(--color-primary-600)' : 'transparent',
                 color: activity === t.key ? '#fff' : 'var(--fg)',
               }}
             >
@@ -165,7 +165,7 @@ export default function StudentList({ students }: { students: StudentSummary[] }
                 <div className="flex items-start gap-3">
                   <div
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ background: 'var(--color-brand-600)' }}
+                    style={{ background: 'var(--color-primary-600)' }}
                   >
                     {(s.full_name || s.email || '؟').charAt(0).toUpperCase()}
                   </div>
@@ -204,22 +204,22 @@ export default function StudentList({ students }: { students: StudentSummary[] }
                     value={s.activeDays7}
                     max={7}
                     height={5}
-                    color={s.activeDays7 >= 4 ? 'var(--color-accent-500)' : 'var(--color-brand-600)'}
+                    color={s.activeDays7 >= 4 ? 'var(--color-accent-700)' : 'var(--color-primary-600)'}
                   />
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
                   <span style={{ color: 'var(--muted)' }}>{lastSeenLabel(s)}</span>
                   {!s.placement_done && (
-                    <span className="badge bg-amber-100 text-amber-700">تعیین سطح نشده</span>
+                    <span className="badge bg-warning-50 text-warning-800">تعیین سطح نشده</span>
                   )}
                   {s.pendingReview > 0 && (
-                    <span className="badge num bg-sky-100 text-sky-700">
+                    <span className="badge num bg-info-50 text-info-800">
                       {s.pendingReview} بازبینی
                     </span>
                   )}
                   {s.openMistakes > 0 && (
-                    <span className="badge num bg-rose-100 text-rose-700">
+                    <span className="badge num bg-error-50 text-error-700">
                       {s.openMistakes} خطای باز
                     </span>
                   )}

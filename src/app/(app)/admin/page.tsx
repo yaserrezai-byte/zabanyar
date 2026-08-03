@@ -56,7 +56,7 @@ export default async function AdminPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-right" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+              <tr className="border-b text-start" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
                 <th className="p-2 font-medium">نام</th>
                 <th className="p-2 font-medium">ایمیل</th>
                 <th className="p-2 font-medium">نقش</th>
@@ -72,9 +72,9 @@ export default async function AdminPage() {
                   <td className="ltr p-2 text-xs" dir="ltr">{u.email}</td>
                   <td className="p-2">
                     <span className={`badge ${
-                      u.role === 'admin' ? 'bg-purple-100 text-purple-700'
-                      : u.role === 'teacher' ? 'bg-sky-100 text-sky-700'
-                      : 'bg-slate-100 text-slate-700'
+                      u.role === 'admin' ? 'bg-info-100 text-info-800'
+                      : u.role === 'teacher' ? 'bg-info-50 text-info-800'
+                      : 'bg-primary-50 text-primary-800'
                     }`}>
                       {{ student: 'زبان‌آموز', teacher: 'مدرس', admin: 'مدیر' }[u.role as string]}
                     </span>
@@ -84,7 +84,7 @@ export default async function AdminPage() {
                   </td>
                   <td className="num p-2">{u.streak_days}</td>
                   <td className="p-2">
-                    <span className="badge bg-slate-100 text-slate-700">
+                    <span className="badge bg-primary-50 text-primary-800">
                       {{ free: 'رایگان', pro: 'حرفه‌ای', premium: 'ویژه' }[u.subscription as string]}
                     </span>
                   </td>

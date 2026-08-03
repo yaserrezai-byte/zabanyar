@@ -153,7 +153,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         <Link
           href={isSignup ? '/login' : '/signup'}
           className="font-medium hover:underline"
-          style={{ color: 'var(--color-brand-600)' }}
+          style={{ color: 'var(--color-primary-600)' }}
         >
           {isSignup ? 'وارد شوید' : 'ثبت‌نام کنید'}
         </Link>

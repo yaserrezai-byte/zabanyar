@@ -153,10 +153,10 @@ export function computeStreak(dates: string[], today = new Date()): number {
 }
 
 export const TIER_STYLE: Record<BadgeTier, { bg: string; fg: string; label: string }> = {
-  bronze:   { bg: 'rgb(180 83 9 / .12)',   fg: '#b45309', label: 'برنز' },
-  silver:   { bg: 'rgb(100 116 139 / .14)', fg: '#475569', label: 'نقره' },
-  gold:     { bg: 'rgb(245 158 11 / .16)',  fg: '#b45309', label: 'طلا' },
-  platinum: { bg: 'rgb(139 92 246 / .14)',  fg: '#6d28d9', label: 'پلاتین' },
+  bronze:   { bg: 'rgb(158 90 0 / .12)',    fg: '#7c4600', label: 'برنز' },
+  silver:   { bg: 'rgb(90 100 115 / .14)',  fg: '#454e5c', label: 'نقره' },
+  gold:     { bg: 'rgb(178 106 0 / .16)',   fg: '#7c4600', label: 'طلا' },
+  platinum: { bg: 'rgb(91 63 158 / .14)',   fg: '#4b3382', label: 'پلاتین' },
 };
 
 /**

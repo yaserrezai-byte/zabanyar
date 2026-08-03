@@ -146,11 +146,12 @@ export default function InstallPrompt() {
       role="dialog"
       aria-live="polite"
       aria-label="نصب اپلیکیشن زبان‌یار"
-      className="fade-in fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-md sm:inset-x-auto sm:left-4 sm:right-auto"
+      className="fade-in fixed inset-x-3 z-[60] mx-auto max-w-md sm:inset-x-auto sm:start-4"
+      style={{ bottom: 'calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 0.75rem)' }}
     >
       <div
         className="card flex items-start gap-3 p-4 shadow-lg"
-        style={{ borderColor: 'var(--color-brand-300)' }}
+        style={{ borderColor: 'var(--color-primary-300)' }}
       >
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white"

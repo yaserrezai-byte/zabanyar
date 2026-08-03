@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import WritingWorkshop from '@/components/WritingWorkshop';
-import { Card, SectionTitle } from '@/components/ui';
+import { Card, Empty, SectionTitle } from '@/components/ui';
 import type { Assignment, Submission } from '@/types/db';
 import { SKILL_FA, SKILL_ICON, type SkillKind } from '@/types/db';
 import Speak from '@/components/Speak';
@@ -25,7 +25,7 @@ export default async function AssignmentsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 fade-in">
       <div>
-        <h1 className="text-2xl font-bold">✍️ کارگاه نوشتن و تکالیف</h1>
+        <h1 className="t-h1">✍️ کارگاه نوشتن و تکالیف</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
           هر متنی که بنویسید در چند ثانیه تصحیح می‌شود — با نمره، متن اصلاح‌شده و توضیح فارسی هر اشتباه.
         </p>
@@ -33,9 +33,9 @@ export default async function AssignmentsPage() {
 
       <WritingWorkshop assignments={(assignments ?? []) as Assignment[]} />
 
-      {assignments && assignments.length > 0 && (
-        <Card>
-          <SectionTitle title="تکالیف من" />
+      <Card>
+        <SectionTitle title="تکالیف من" />
+        {assignments && assignments.length > 0 ? (
           <div className="space-y-2">
             {assignments.map((a) => (
               <div key={a.id} className="flex items-center justify-between rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
@@ -46,17 +46,24 @@ export default async function AssignmentsPage() {
                   </div>
                 </div>
                 <span className={`badge ${
-                  a.status === 'graded' ? 'bg-emerald-100 text-emerald-700'
-                  : a.status === 'submitted' ? 'bg-sky-100 text-sky-700'
-                  : 'bg-amber-100 text-amber-700'
+                  a.status === 'graded' ? 'bg-success-50 text-success-800'
+                  : a.status === 'submitted' ? 'bg-info-50 text-info-800'
+                  : 'bg-warning-50 text-warning-800'
                 }`}>
                   {{ assigned: 'در انتظار', submitted: 'ارسال شده', graded: 'تصحیح شده', late: 'با تأخیر', skipped: 'رد شده' }[a.status as string]}
                 </span>
               </div>
             ))}
           </div>
-        </Card>
-      )}
+        ) : (
+          <Empty
+            icon="✍️"
+            title="هنوز تکلیفی برای تو ثبت نشده"
+            description="تکالیف را مدرس شما تعیین می‌کند. تا آن زمان می‌توانید در کادر بالا هر متنی بنویسید تا همان‌جا تصحیح شود."
+            action={{ label: 'گفت‌وگو با مربی هوشمند', href: '/tutor' }}
+          />
+        )}
+      </Card>
 
       {submissions && submissions.length > 0 && (
         <Card>
@@ -71,9 +78,9 @@ export default async function AssignmentsPage() {
                       {(sub.answer_text ?? '').slice(0, 60)}…
                     </span>
                     <span className={`badge num shrink-0 ${
-                      (sub.score ?? 0) >= 80 ? 'bg-emerald-100 text-emerald-700'
-                      : (sub.score ?? 0) >= 55 ? 'bg-amber-100 text-amber-700'
-                      : 'bg-rose-100 text-rose-700'
+                      (sub.score ?? 0) >= 80 ? 'bg-success-50 text-success-800'
+                      : (sub.score ?? 0) >= 55 ? 'bg-warning-50 text-warning-800'
+                      : 'bg-error-50 text-error-700'
                     }`}>
                       {Math.round(sub.score ?? 0)}
                     </span>
@@ -81,11 +88,11 @@ export default async function AssignmentsPage() {
                   <div className="mt-3 space-y-2 text-sm">
                     <p className="leading-7">{sub.feedback_fa}</p>
                     {sub.teacher_feedback && (
-                      <div className="rounded-lg border border-brand-200 bg-brand-50 p-2.5">
-                        <div className="mb-1 text-xs font-bold text-brand-700">
+                      <div className="rounded-lg border border-primary-200 bg-primary-50 p-2.5">
+                        <div className="mb-1 text-xs font-bold text-primary-800">
                           👨‍🏫 بازخورد مدرس
                           {sub.teacher_score != null && (
-                            <span className="num badge mr-2 bg-brand-600 text-white">
+                            <span className="num badge ms-2 bg-primary-700 text-white">
                               {Math.round(sub.teacher_score)}
                             </span>
                           )}

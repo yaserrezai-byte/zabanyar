@@ -19,38 +19,102 @@
   font-display: swap;
 }
 
+/* ============================================================
+   Zabanyar design tokens — see DESIGN-SYSTEM.md
+   Palette: Persian turquoise (primary) + saffron (accent).
+   Every text/background pair below is verified >= 4.5:1 (WCAG AA).
+   ============================================================ */
+
 @theme {
   --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
-  --color-brand-50:  #eef6ff;
-  --color-brand-100: #d9eaff;
-  --color-brand-200: #bcdaff;
-  --color-brand-300: #8ec3ff;
-  --color-brand-400: #59a2ff;
-  --color-brand-500: #337dff;
-  --color-brand-600: #1d5cf5;
-  --color-brand-700: #1748e1;
-  --color-brand-800: #193cb6;
-  --color-brand-900: #1a378f;
-  --color-accent-400: #34d399;
-  --color-accent-500: #10b981;
-  --color-accent-600: #059669;
+
+  /* --- primary: Persian turquoise (tilework) --- */
+  --color-primary-50:  #e8f4f6;
+  --color-primary-100: #cde7eb;
+  --color-primary-200: #a3d3da;
+  --color-primary-300: #6fb8c3;
+  --color-primary-400: #3d9aa8;
+  --color-primary-500: #17838f;
+  --color-primary-600: #0e7c8a;
+  --color-primary-700: #0a6270;
+  --color-primary-800: #084e59;
+  --color-primary-900: #063c45;
+
+  /* --- accent: saffron --- */
+  --color-accent-50:  #fdf3e3;
+  --color-accent-100: #fae4c2;
+  --color-accent-200: #f4cb8e;
+  --color-accent-600: #b26a00;
+  --color-accent-700: #9e5a00;
+  --color-accent-800: #7c4600;
+
+  /* --- semantic --- */
+  --color-success-50:  #e8f5ee;
+  --color-success-100: #cbe9d9;
+  --color-success-700: #1f7a4d;
+  --color-success-800: #17603c;
+
+  --color-error-50:  #fbeeec;
+  --color-error-100: #f6dad6;
+  --color-error-600: #b4453c;
+  --color-error-700: #963830;
+
+  --color-warning-50:  #fbf3df;
+  --color-warning-100: #f5e6be;
+  --color-warning-700: #8a6100;
+  --color-warning-800: #6e4d00;
+
+  --color-info-50:  #eaf2fa;
+  --color-info-100: #d2e3f3;
+  --color-info-700: #1c5a96;
+  --color-info-800: #124878;
+
+  /* --- legacy aliases: keep old `brand-*` class names compiling --- */
+  --color-brand-50:  #e8f4f6;
+  --color-brand-100: #cde7eb;
+  --color-brand-200: #a3d3da;
+  --color-brand-300: #6fb8c3;
+  --color-brand-400: #3d9aa8;
+  --color-brand-500: #17838f;
+  --color-brand-600: #0e7c8a;
+  --color-brand-700: #0a6270;
+  --color-brand-800: #084e59;
+  --color-brand-900: #063c45;
+
+  /* --- radius scale --- */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  22px;
 }
 
 :root {
-  --bg: #f6f8fc;
-  --fg: #0f172a;
+  --bg: #fbfaf7;            /* warm paper, not clinical grey-blue */
+  --fg: #141a24;            /* 16.72:1 on --bg */
   --card: #ffffff;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  --muted: #5a6473;         /* 5.74:1 on --bg, 5.99:1 on --card */
+  --border: #e7e3dc;        /* decorative separators */
+  --border-strong: #8b8272; /* 3.64:1 — perceivable UI boundaries (inputs, options) */
+
+  --ring: var(--color-primary-600);
+  --shadow-sm: 0 1px 2px rgb(20 26 36 / 0.05);
+  --shadow-md: 0 4px 14px rgb(20 26 36 / 0.07);
+  --shadow-lg: 0 12px 32px rgb(20 26 36 / 0.12);
+
+  /* mobile bottom-nav height, so pages can pad themselves */
+  --bottom-nav-h: 4.25rem;
 }
 
+/* Dark mode is intentionally minimal for now (see UI-AUDIT.md §future).
+   Only the surface variables flip; semantic hues stay legible on dark. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1220;
-    --fg: #e6edf7;
-    --card: #131c2e;
-    --muted: #93a3bb;
-    --border: #24304a;
+    --bg: #10161c;
+    --fg: #e9eef2;
+    --card: #18212a;
+    --muted: #a3b0bb;
+    --border: #26323d;
+    --border-strong: #4a5a68;
   }
 }
 
@@ -65,50 +129,132 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ---------------- Focus (WCAG 2.4.7) ----------------
+   One rule, everything interactive. Two-tone ring so it is
+   visible on both light cards and coloured buttons.        */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+:where(.btn-primary, .btn-accent, .btn-destructive):focus-visible {
+  outline-color: var(--fg);
+  box-shadow: 0 0 0 4px rgb(255 255 255 / .85);
+}
+/* never remove focus for keyboard users, even if a component sets outline:none */
+:focus-visible { outline-style: solid; }
+
 .ltr { direction: ltr; text-align: left; }
 .num { font-variant-numeric: tabular-nums; }
 
+/* Clears the fixed mobile bottom nav. No-op on desktop. */
+.pb-nav { padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 1rem); }
+@media (min-width: 1024px) { .pb-nav { padding-bottom: 1.5rem; } }
+
+/* ---------------- Typography scale ---------------- */
+.t-display { font-size: 2rem;    line-height: 1.35; font-weight: 700; letter-spacing: -.01em; }
+.t-h1      { font-size: 1.5rem;  line-height: 1.45; font-weight: 700; }
+.t-h2      { font-size: 1.175rem;line-height: 1.5;  font-weight: 700; }
+.t-h3      { font-size: 1rem;    line-height: 1.6;  font-weight: 500; }
+.t-body    { font-size: .95rem;  line-height: 1.9; }
+.t-caption { font-size: .8rem;   line-height: 1.7;  color: var(--muted); }
+@media (min-width: 640px) {
+  .t-display { font-size: 2.5rem; }
+  .t-h1      { font-size: 1.75rem; }
+}
+
+/* ---------------- Surfaces ---------------- */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.card-raised { box-shadow: var(--shadow-md); }
+
+/* Hero card — used once per screen for the primary action. */
+.card-hero {
+  background:
+    radial-gradient(120% 130% at 100% 0%, rgb(255 255 255 / .16) 0%, transparent 55%),
+    linear-gradient(135deg, var(--color-primary-700), var(--color-primary-900));
+  color: #fff;
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
 }
 
+/* ---------------- Buttons — min 44px touch target ---------------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  border-radius: .75rem; padding: .625rem 1.15rem; font-weight: 500;
-  transition: all .18s ease; cursor: pointer; border: 1px solid transparent;
-  font-size: .95rem;
+  border-radius: var(--radius-md);
+  min-height: 2.75rem;              /* 44px */
+  padding: .625rem 1.15rem;
+  font-weight: 500; font-size: .95rem; font-family: inherit;
+  transition: background-color .16s ease, border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+  cursor: pointer; border: 1px solid transparent;
+  text-align: center;
 }
-.btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn-primary { background: var(--color-brand-600); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--color-brand-700); transform: translateY(-1px); }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-sm { min-height: 2.25rem; padding: .35rem .8rem; font-size: .85rem; border-radius: var(--radius-sm); }
+.btn-lg { min-height: 3.25rem; padding: .85rem 1.5rem; font-size: 1.05rem; }
+
+.btn-primary { background: var(--color-primary-600); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--color-primary-700); box-shadow: var(--shadow-md); }
+.btn-primary:active:not(:disabled) { background: var(--color-primary-800); transform: translateY(1px); box-shadow: none; }
+
+.btn-secondary { background: var(--card); color: var(--color-primary-700); border-color: var(--color-primary-300); }
+.btn-secondary:hover:not(:disabled) { background: var(--color-primary-50); border-color: var(--color-primary-500); }
+.btn-secondary:active:not(:disabled) { background: var(--color-primary-100); transform: translateY(1px); }
+
 .btn-ghost { background: transparent; color: var(--fg); border-color: var(--border); }
-.btn-ghost:hover:not(:disabled) { background: var(--color-brand-50); border-color: var(--color-brand-300); }
-.btn-accent { background: var(--color-accent-600); color: #fff; }
-.btn-accent:hover:not(:disabled) { background: var(--color-accent-500); }
+.btn-ghost:hover:not(:disabled) { background: var(--color-primary-50); border-color: var(--color-primary-300); }
+.btn-ghost:active:not(:disabled) { background: var(--color-primary-100); transform: translateY(1px); }
 
+.btn-accent { background: var(--color-accent-700); color: #fff; }
+.btn-accent:hover:not(:disabled) { background: var(--color-accent-800); box-shadow: var(--shadow-md); }
+.btn-accent:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+
+.btn-destructive { background: var(--color-error-600); color: #fff; }
+.btn-destructive:hover:not(:disabled) { background: var(--color-error-700); }
+.btn-destructive:active:not(:disabled) { transform: translateY(1px); }
+
+/* ---------------- Inputs ---------------- */
 .input {
-  width: 100%; border-radius: .75rem; border: 1px solid var(--border);
+  width: 100%; border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
   background: var(--card); color: var(--fg);
-  padding: .7rem .9rem; font-size: .95rem; outline: none;
+  min-height: 2.75rem;
+  padding: .7rem .9rem; font-size: .95rem; font-family: inherit;
+  outline: none;
   transition: border-color .15s, box-shadow .15s;
-  font-family: inherit;
 }
-.input:focus { border-color: var(--color-brand-500); box-shadow: 0 0 0 3px rgb(51 125 255 / .15); }
+.input::placeholder { color: var(--muted); opacity: 1; }
+.input:hover:not(:disabled) { border-color: var(--color-primary-500); }
+.input:focus-visible {
+  border-color: var(--color-primary-600);
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 1px;
+}
+.input:disabled { background: var(--bg); opacity: .65; cursor: not-allowed; }
+.input[aria-invalid='true'] { border-color: var(--color-error-600); }
+.input[aria-invalid='true']:focus-visible { outline-color: var(--color-error-600); }
 
+/* ---------------- Badge ---------------- */
 .badge {
   display: inline-flex; align-items: center; gap: .3rem;
   border-radius: 999px; padding: .2rem .65rem;
-  font-size: .75rem; font-weight: 500;
+  font-size: .75rem; font-weight: 500; white-space: nowrap;
 }
 
+/* ---------------- Skeleton ---------------- */
 .skeleton {
-  background: linear-gradient(90deg, var(--border) 25%, var(--card) 50%, var(--border) 75%);
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--border) 85%, var(--card)) 25%,
+    var(--card) 50%,
+    color-mix(in srgb, var(--border) 85%, var(--card)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
-  border-radius: .5rem;
+  border-radius: var(--radius-sm);
 }
 @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 
@@ -117,11 +263,43 @@ body {
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ---------------- Gamification ---------------- */
+/* Skip link — first tab stop on every page. */
+.skip-link {
+  position: absolute; inset-inline-start: 1rem; top: -3.5rem;
+  z-index: 100; background: var(--color-primary-700); color: #fff;
+  padding: .6rem 1rem; border-radius: var(--radius-md);
+  transition: top .2s ease;
+}
+.skip-link:focus-visible { top: 1rem; }
 
+/* ---------------- Signature: Bridge Ring ----------------
+   Fill sweeps from the right (Persian reading start) toward the
+   left (English reading start). Motion only, no colour change. */
+@keyframes bridge-draw { from { stroke-dashoffset: var(--dash-from); } to { stroke-dashoffset: var(--dash-to); } }
+.bridge-arc { animation: bridge-draw .9s cubic-bezier(.22,.9,.3,1) both; }
+
+/* ---------------- Answer feedback ---------------- */
+@keyframes answer-correct {
+  0% { transform: scale(1); } 45% { transform: scale(1.025); } 100% { transform: scale(1); }
+}
+@keyframes answer-wrong {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(4px); } 75% { transform: translateX(-4px); }
+}
+.answer-correct { animation: answer-correct .4s ease both; }
+.answer-wrong   { animation: answer-wrong .32s ease both; }
+
+/* Typing indicator (tutor chat) */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}
+.typing-dot { animation: typing-bounce 1.1s infinite ease-in-out; }
+
+/* ---------------- Gamification ---------------- */
 @keyframes badge-pop {
   0%   { opacity: 0; transform: scale(.4) rotate(-12deg); }
   55%  { opacity: 1; transform: scale(1.12) rotate(4deg); }
@@ -129,17 +307,9 @@ body {
 }
 .badge-pop { animation: badge-pop .55s cubic-bezier(.34,1.56,.64,1) both; }
 
-@keyframes badge-shine {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
+@keyframes badge-shine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .badge-shine {
-  background-image: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgb(255 255 255 / .55) 50%,
-    transparent 70%
-  );
+  background-image: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%);
   background-size: 200% 100%;
   animation: badge-shine 2.2s ease-in-out infinite;
 }
@@ -155,10 +325,7 @@ body {
   100% { opacity: 0; transform: translateY(120px) rotate(320deg); }
 }
 .confetti-bit {
-  position: absolute;
-  width: 7px;
-  height: 11px;
-  border-radius: 2px;
+  position: absolute; width: 7px; height: 11px; border-radius: 2px;
   animation: confetti-fall 1.5s ease-in forwards;
 }
 
@@ -166,6 +333,11 @@ body {
 .badge-locked { filter: grayscale(1); opacity: .42; }
 
 @media (prefers-reduced-motion: reduce) {
-  .badge-pop, .toast-in, .badge-shine, .confetti-bit { animation: none; }
+  html { scroll-behavior: auto; }
+  .badge-pop, .toast-in, .badge-shine, .confetti-bit,
+  .fade-in, .skeleton, .bridge-arc, .typing-dot,
+  .answer-correct, .answer-wrong { animation: none; }
   .confetti-bit { display: none; }
+  .btn { transition: none; }
+  .btn:hover:not(:disabled), .btn:active:not(:disabled) { transform: none; }
 }

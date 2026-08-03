@@ -23,7 +23,7 @@ export default function OfflinePage() {
         </p>
 
         <div
-          className="mt-5 rounded-xl border p-4 text-right text-sm leading-8"
+          className="mt-5 rounded-xl border p-4 text-start text-sm leading-8"
           style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
         >
           <div className="mb-1 font-bold">💡 چند نکته</div>

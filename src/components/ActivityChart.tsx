@@ -15,8 +15,8 @@ export default function ActivityChart({
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-brand-500)" stopOpacity={0.5} />
-              <stop offset="95%" stopColor="var(--color-brand-500)" stopOpacity={0} />
+              <stop offset="5%" stopColor="var(--color-primary-500)" stopOpacity={0.5} />
+              <stop offset="95%" stopColor="var(--color-primary-500)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -35,7 +35,7 @@ export default function ActivityChart({
           <Area
             type="monotone"
             dataKey="minutes"
-            stroke="var(--color-brand-600)"
+            stroke="var(--color-primary-600)"
             strokeWidth={2}
             fill="url(#g)"
           />

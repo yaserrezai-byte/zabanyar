@@ -35,11 +35,11 @@ export default function TeacherTabs({ isAdmin }: { isAdmin: boolean }) {
             className="rounded-lg px-3 py-1.5 text-sm transition-colors"
             style={
               active(t.href, t.exact)
-                ? { background: 'var(--color-brand-50)', color: 'var(--color-brand-700)', fontWeight: 500 }
+                ? { background: 'var(--color-primary-50)', color: 'var(--color-primary-700)', fontWeight: 500 }
                 : { color: 'var(--muted)' }
             }
           >
-            <span className="ml-1">{t.icon}</span>
+            <span className="me-1" aria-hidden="true">{t.icon}</span>
             {t.label}
           </Link>
         ))}

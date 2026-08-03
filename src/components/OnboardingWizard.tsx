@@ -70,9 +70,9 @@ export default function OnboardingWizard({ profile }: { profile: Profile }) {
           <div key={s} className="flex-1">
             <div
               className="h-1.5 rounded-full transition-all"
-              style={{ background: i <= step ? 'var(--color-brand-600)' : 'var(--border)' }}
+              style={{ background: i <= step ? 'var(--color-primary-600)' : 'var(--border)' }}
             />
-            <div className="mt-1.5 text-center text-[11px]" style={{ color: i <= step ? 'var(--color-brand-600)' : 'var(--muted)' }}>
+            <div className="mt-1.5 text-center text-[11px]" style={{ color: i <= step ? 'var(--color-primary-600)' : 'var(--muted)' }}>
               {s}
             </div>
           </div>
@@ -119,8 +119,8 @@ export default function OnboardingWizard({ profile }: { profile: Profile }) {
                   onClick={() => setGoal(g.min)}
                   className="rounded-xl border-2 p-4 text-center transition-all"
                   style={{
-                    borderColor: goal === g.min ? 'var(--color-brand-600)' : 'var(--border)',
-                    background: goal === g.min ? 'var(--color-brand-50)' : 'transparent',
+                    borderColor: goal === g.min ? 'var(--color-primary-600)' : 'var(--border)',
+                    background: goal === g.min ? 'var(--color-primary-50)' : 'transparent',
                   }}
                 >
                   <div className="text-lg font-bold">{g.label}</div>
@@ -146,8 +146,8 @@ export default function OnboardingWizard({ profile }: { profile: Profile }) {
                   onClick={() => setTarget(l)}
                   className="rounded-xl border-2 p-3 text-center transition-all"
                   style={{
-                    borderColor: target === l ? 'var(--color-brand-600)' : 'var(--border)',
-                    background: target === l ? 'var(--color-brand-50)' : 'transparent',
+                    borderColor: target === l ? 'var(--color-primary-600)' : 'var(--border)',
+                    background: target === l ? 'var(--color-primary-50)' : 'transparent',
                   }}
                 >
                   <div className="num text-base font-bold">{l}</div>
@@ -173,8 +173,8 @@ export default function OnboardingWizard({ profile }: { profile: Profile }) {
                   onClick={() => toggle(i)}
                   className="rounded-full border px-3.5 py-1.5 text-sm transition-all"
                   style={{
-                    borderColor: interests.includes(i) ? 'var(--color-brand-600)' : 'var(--border)',
-                    background: interests.includes(i) ? 'var(--color-brand-600)' : 'transparent',
+                    borderColor: interests.includes(i) ? 'var(--color-primary-600)' : 'var(--border)',
+                    background: interests.includes(i) ? 'var(--color-primary-600)' : 'transparent',
                     color: interests.includes(i) ? '#fff' : 'var(--fg)',
                   }}
                 >
@@ -191,12 +191,12 @@ export default function OnboardingWizard({ profile }: { profile: Profile }) {
         <div className="mt-7 flex gap-3">
           {step > 0 && (
             <button onClick={() => setStep((s) => s - 1)} className="btn btn-ghost">
-              ← قبلی
+              → قبلی
             </button>
           )}
           {step < 3 ? (
             <button onClick={() => setStep((s) => s + 1)} className="btn btn-primary flex-1">
-              بعدی →
+              بعدی ←
             </button>
           ) : (
             <button onClick={save} className="btn btn-primary flex-1" disabled={saving}>

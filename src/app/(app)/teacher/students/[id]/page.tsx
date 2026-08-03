@@ -39,7 +39,7 @@ export default async function StudentDetailPage({
 
   return (
     <div className="space-y-6 fade-in">
-      <Link href="/teacher/students" className="text-sm hover:underline" style={{ color: 'var(--color-brand-600)' }}>
+      <Link href="/teacher/students" className="text-sm hover:underline" style={{ color: 'var(--color-primary-600)' }}>
         → بازگشت به فهرست دانش‌آموزان
       </Link>
 
@@ -48,7 +48,7 @@ export default async function StudentDetailPage({
         <div className="flex flex-wrap items-start gap-4">
           <div
             className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
-            style={{ background: 'var(--color-brand-600)' }}
+            style={{ background: 'var(--color-primary-600)' }}
           >
             {(profile.full_name || profile.email || '؟').charAt(0).toUpperCase()}
           </div>
@@ -58,15 +58,15 @@ export default async function StudentDetailPage({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {profile.current_level && <LevelBadge level={profile.current_level as CefrLevel} />}
               {profile.target_level && (
-                <span className="badge bg-slate-100 text-slate-700">
+                <span className="badge bg-primary-50 text-primary-800">
                   هدف: <b className="num">{profile.target_level}</b>
                 </span>
               )}
               {profile.streak_days > 0 && (
-                <span className="badge num bg-amber-100 text-amber-700">🔥 {profile.streak_days}</span>
+                <span className="badge num bg-warning-50 text-warning-800">🔥 {profile.streak_days}</span>
               )}
               {!profile.placement_done && (
-                <span className="badge bg-rose-100 text-rose-700">تعیین سطح نشده</span>
+                <span className="badge bg-error-50 text-error-700">تعیین سطح نشده</span>
               )}
             </div>
             {profile.interests?.length > 0 && (
@@ -127,7 +127,7 @@ export default async function StudentDetailPage({
                 <div key={m.id} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium">{m.error_label_fa || m.error_tag}</span>
-                    <span className={`badge num ${m.resolved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`badge num ${m.resolved ? 'bg-success-50 text-success-800' : 'bg-warning-50 text-warning-800'}`}>
                       {m.occurrences}×
                     </span>
                   </div>
@@ -142,7 +142,7 @@ export default async function StudentDetailPage({
                     </p>
                   )}
                   <div className="mt-2">
-                    <Progress value={Number(m.severity) * 100} height={5} color="#f59e0b" />
+                    <Progress value={Number(m.severity) * 100} height={5} color="var(--color-warning-700)" />
                   </div>
                 </div>
               ))}
@@ -177,9 +177,9 @@ export default async function StudentDetailPage({
                   </div>
                 </div>
                 <span className={`badge shrink-0 ${
-                  a.status === 'graded' ? 'bg-emerald-100 text-emerald-700'
-                  : a.status === 'submitted' ? 'bg-sky-100 text-sky-700'
-                  : 'bg-amber-100 text-amber-700'
+                  a.status === 'graded' ? 'bg-success-50 text-success-800'
+                  : a.status === 'submitted' ? 'bg-info-50 text-info-800'
+                  : 'bg-warning-50 text-warning-800'
                 }`}>
                   {{ assigned: 'در انتظار', submitted: 'ارسال شده', graded: 'تصحیح شده', late: 'با تأخیر', skipped: 'رد شده' }[a.status as string]}
                 </span>

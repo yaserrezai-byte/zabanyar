@@ -92,14 +92,14 @@ export default function GroupLobby({
                 key={s.id}
                 onClick={() => void join(s)}
                 disabled={joining !== null}
-                className="rounded-xl border-2 p-4 text-right transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                className="rounded-xl border-2 p-4 text-start transition-all hover:-translate-y-0.5 disabled:opacity-60"
                 style={{ borderColor: 'var(--border)' }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-3xl">{s.icon}</span>
                   {waiting > 0 && (
-                    <span className="badge bg-emerald-100 text-emerald-700">
-                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    <span className="badge bg-success-50 text-success-800">
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: 'var(--color-success-700)' }} />
                       اتاق باز
                     </span>
                   )}
@@ -116,11 +116,11 @@ export default function GroupLobby({
                 </p>
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="num badge bg-slate-100 text-slate-700">{s.minLevel}+</span>
+                  <span className="num badge bg-primary-50 text-primary-800">{s.minLevel}+</span>
                   {joining === s.id ? (
                     <Spinner size={15} />
                   ) : (
-                    <span className="text-xs" style={{ color: 'var(--color-brand-600)' }}>
+                    <span className="text-xs" style={{ color: 'var(--color-primary-600)' }}>
                       پیوستن ←
                     </span>
                   )}

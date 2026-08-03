@@ -119,7 +119,7 @@ export default function Leaderboard() {
               setOptIn(e.target.checked);
               void savePrefs(e.target.checked);
             }}
-            className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-brand-600)]"
+            className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-primary-700)]"
           />
           <span className="text-sm leading-7">
             نام و امتیاز من در جدول عمومی نمایش داده شود.
@@ -188,7 +188,7 @@ export default function Leaderboard() {
                 className="rounded-lg px-3 py-1.5 text-sm transition-colors"
                 style={
                   period === k
-                    ? { background: 'var(--color-brand-50)', color: 'var(--color-brand-700)', fontWeight: 500 }
+                    ? { background: 'var(--color-primary-50)', color: 'var(--color-primary-700)', fontWeight: 500 }
                     : { color: 'var(--muted)' }
                 }
               >
@@ -227,8 +227,8 @@ export default function Leaderboard() {
                   key={`${r.rank}-${r.name}`}
                   className="flex items-center gap-3 rounded-xl border p-3 transition-colors"
                   style={{
-                    borderColor: r.is_me ? 'var(--color-brand-600)' : 'var(--border)',
-                    background: r.is_me ? 'var(--color-brand-50)' : 'transparent',
+                    borderColor: r.is_me ? 'var(--color-primary-600)' : 'var(--border)',
+                    background: r.is_me ? 'var(--color-primary-50)' : 'transparent',
                   }}
                 >
                   <div className="w-9 shrink-0 text-center">
@@ -245,7 +245,7 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-2">
                       <span className="truncate font-medium">{r.name}</span>
                       {r.is_me && (
-                        <span className="badge shrink-0 bg-brand-100 text-brand-700">شما</span>
+                        <span className="badge shrink-0 bg-primary-100 text-primary-800">شما</span>
                       )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
@@ -257,8 +257,8 @@ export default function Leaderboard() {
                     </div>
                   </div>
 
-                  <div className="shrink-0 text-left">
-                    <div className="num text-lg font-bold" style={{ color: 'var(--color-brand-600)' }}>
+                  <div className="shrink-0 text-end">
+                    <div className="num text-lg font-bold" style={{ color: 'var(--color-primary-600)' }}>
                       {r.xp}
                     </div>
                     <div className="text-[10px]" style={{ color: 'var(--muted)' }}>XP</div>

@@ -76,10 +76,10 @@ export default async function TeacherAssignmentsPage() {
                 <span
                   className={`badge shrink-0 ${
                     a.status === 'graded'
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-success-50 text-success-800'
                       : a.status === 'submitted'
-                        ? 'bg-sky-100 text-sky-700'
-                        : 'bg-amber-100 text-amber-700'
+                        ? 'bg-info-50 text-info-800'
+                        : 'bg-warning-50 text-warning-800'
                   }`}
                 >
                   {{ assigned: 'در انتظار', submitted: 'ارسال شده', graded: 'تصحیح شده', late: 'با تأخیر', skipped: 'رد شده' }[a.status as string]}

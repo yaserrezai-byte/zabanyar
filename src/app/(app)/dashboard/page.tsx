@@ -1,7 +1,15 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Card, Empty, LevelBadge, Progress, SectionTitle, Stat } from '@/components/ui';
+import {
+  BridgeRing,
+  Card,
+  Empty,
+  LevelBadge,
+  Progress,
+  SectionTitle,
+  Stat,
+} from '@/components/ui';
 import CoachPanel from '@/components/CoachPanel';
 import SkillRadar from '@/components/SkillRadar';
 import GenerateLessonButton from '@/components/GenerateLessonButton';
@@ -51,6 +59,7 @@ export default async function DashboardPage() {
 
   const skills = skillsRes.data ?? [];
   const history = historyRes.data ?? [];
+  const lessons = lessonsRes.data ?? [];
   const totalXp = history.reduce((s, h) => s + (h.xp ?? 0), 0);
   const totalMin = Math.round(history.reduce((s, h) => s + (h.duration_sec ?? 0), 0) / 60);
   const dueCount = dueRes.count ?? 0;
@@ -61,14 +70,34 @@ export default async function DashboardPage() {
       .reduce((s, h) => s + (h.duration_sec ?? 0), 0) / 60
   );
 
+  const goal = profile.daily_goal_min || 15;
+  const goalDone = todayMin >= goal;
+  const remaining = Math.max(0, goal - todayMin);
+
+  /**
+   * One task, not four. The hero answers "what do I do right now?"
+   * Priority: finish today's goal → clear due words → clear assignments → resume lesson.
+   */
+  const nextTask = goalDone
+    ? dueCount > 0
+      ? { href: '/vocabulary', cta: 'مرور لغات', why: `${dueCount} لغت آماده مرور است` }
+      : { href: '/lessons', cta: 'یک درس دیگر', why: 'هدف امروز تمام شد — می‌توانی جلوتر بروی' }
+    : dueCount > 0
+      ? { href: '/vocabulary', cta: 'شروع مرور لغات', why: `${dueCount} لغت آماده مرور است` }
+      : assignCount > 0
+        ? { href: '/assignments', cta: 'انجام تکلیف', why: `${assignCount} تکلیف در انتظار توست` }
+        : lessons.length
+          ? { href: `/lessons/${lessons[0].id}`, cta: 'ادامه آخرین درس', why: lessons[0].title_fa || lessons[0].title }
+          : { href: '/lessons', cta: 'شروع اولین درس', why: 'هنوز درسی شروع نکرده‌ای' };
+
+  const firstName = (profile.full_name || 'زبان‌آموز').split(' ')[0];
+
   return (
-    <div className="space-y-6 fade-in">
-      {/* header */}
+    <div className="fade-in space-y-6">
+      {/* ---------- header ---------- */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">
-            سلام {profile.full_name || 'زبان‌آموز'} 👋
-          </h1>
+          <h1 className="t-h1">سلام {firstName} 👋</h1>
           <p className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             سطح فعلی شما:
             {profile.current_level && <LevelBadge level={profile.current_level} />}
@@ -77,26 +106,68 @@ export default async function DashboardPage() {
         <GenerateLessonButton label="✨ ساخت درس جدید" />
       </div>
 
-      {/* daily goal */}
-      <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium">هدف امروز</span>
-          <span className="num text-sm" style={{ color: 'var(--muted)' }}>
-            {todayMin} / {profile.daily_goal_min} دقیقه
-          </span>
-        </div>
-        <Progress
-          value={todayMin}
-          max={profile.daily_goal_min}
-          color={todayMin >= profile.daily_goal_min ? 'var(--color-accent-500)' : 'var(--color-brand-600)'}
-          height={10}
-        />
-        {todayMin >= profile.daily_goal_min && (
-          <p className="mt-2 text-sm text-emerald-600">🎉 آفرین! هدف امروز را کامل کردید.</p>
-        )}
-      </Card>
+      {/* ---------- hero: today's task (the one dominant element) ---------- */}
+      <section className="card-hero p-5 sm:p-6" aria-labelledby="today-heading">
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
+          <BridgeRing
+            value={todayMin}
+            max={goal}
+            size={112}
+            stroke={10}
+            color="#ffffff"
+            track="rgb(255 255 255 / .25)"
+            ariaLabel={`${todayMin} دقیقه از ${goal} دقیقه هدف امروز`}
+          >
+            <span className="num text-2xl font-bold">{todayMin}</span>
+            <span className="num text-[.7rem] opacity-80">از {goal} دقیقه</span>
+          </BridgeRing>
 
-      {/* stats */}
+          <div className="min-w-0 flex-1 text-center sm:text-start">
+            <h2 id="today-heading" className="t-h2">
+              {goalDone ? '🎉 هدف امروز کامل شد' : 'کار امروز'}
+            </h2>
+            <p className="mt-1.5 text-sm leading-7 opacity-95">
+              {goalDone
+                ? `${todayMin} دقیقه تمرین کردی. اگر انرژی داری، ادامه بده.`
+                : `${remaining} دقیقه تا هدف امروز مانده. ${nextTask.why}.`}
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <Link
+                href={nextTask.href}
+                className="btn"
+                style={{ background: '#fff', color: 'var(--color-primary-800)' }}
+              >
+                {nextTask.cta}
+              </Link>
+              {profile.streak_days > 0 && (
+                <span className="badge bg-white/15 text-white">
+                  <span aria-hidden="true">🔥</span>
+                  <b className="num">{profile.streak_days}</b> روز پیاپی
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* week-at-a-glance — fills the hero on wide screens */}
+          <dl className="hidden shrink-0 gap-6 border-s ps-6 lg:grid lg:grid-cols-2"
+              style={{ borderColor: 'rgb(255 255 255 / .22)' }}>
+            {[
+              { k: 'امتیاز هفته', v: totalXp },
+              { k: 'دقیقه هفته', v: totalMin },
+              { k: 'لغت آماده مرور', v: dueCount },
+              { k: 'تکلیف باز', v: assignCount },
+            ].map((s) => (
+              <div key={s.k}>
+                <dt className="text-xs opacity-80">{s.k}</dt>
+                <dd className="num mt-0.5 text-xl font-bold">{s.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------- secondary stats ---------- */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="امتیاز هفته" value={totalXp} icon="⭐" hint="مجموع XP ۷ روز اخیر" />
         <Stat label="دقیقه این هفته" value={totalMin} icon="⏱️" />
@@ -104,12 +175,12 @@ export default async function DashboardPage() {
         <Stat label="لغت آماده مرور" value={dueCount} icon="🔁" />
       </div>
 
-      {/* coach */}
+      {/* ---------- coach ---------- */}
       <CoachPanel />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* skills */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
+          {/* skills */}
           <Card>
             <SectionTitle title="نقشه مهارت‌های شما" subtitle="امتیاز هر مهارت از ۱۰۰" />
             {skills.length ? (
@@ -128,21 +199,28 @@ export default async function DashboardPage() {
                       <div key={s.id}>
                         <div className="mb-1 flex items-center justify-between text-sm">
                           <span>
-                            {SKILL_ICON[s.skill as SkillKind]} {SKILL_FA[s.skill as SkillKind]}
+                            <span aria-hidden="true">{SKILL_ICON[s.skill as SkillKind]}</span>{' '}
+                            {SKILL_FA[s.skill as SkillKind]}
                           </span>
                           <span className="num" style={{ color: 'var(--muted)' }}>
                             {Math.round(Number(s.score))} · {s.level}
                           </span>
                         </div>
-                        <Progress value={Number(s.score)} />
+                        <Progress
+                          value={Number(s.score)}
+                          label={`${SKILL_FA[s.skill as SkillKind]}: ${Math.round(Number(s.score))} از ۱۰۰`}
+                        />
                       </div>
                     ))}
                 </div>
               </div>
             ) : (
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                هنوز داده‌ای ثبت نشده است.
-              </p>
+              <Empty
+                icon="🧭"
+                title="نقشه مهارت‌ها هنوز ساخته نشده"
+                description="بعد از اولین درس یا آزمون، امتیاز شش مهارت شما اینجا رسم می‌شود."
+                action={{ label: 'شروع یک درس', href: '/lessons' }}
+              />
             )}
           </Card>
 
@@ -150,32 +228,46 @@ export default async function DashboardPage() {
           <Card>
             <SectionTitle
               title="آخرین درس‌های شما"
-              action={<Link href="/lessons" className="text-sm hover:underline" style={{ color: 'var(--color-brand-600)' }}>همه درس‌ها ←</Link>}
+              action={
+                <Link
+                  href="/lessons"
+                  className="text-sm hover:underline"
+                  style={{ color: 'var(--color-primary-700)' }}
+                >
+                  همه درس‌ها
+                </Link>
+              }
             />
-            {lessonsRes.data?.length ? (
+            {lessons.length ? (
               <div className="space-y-2">
-                {lessonsRes.data.map((l) => (
+                {lessons.map((l) => (
                   <Link
                     key={l.id}
                     href={`/lessons/${l.id}`}
-                    className="flex items-center justify-between rounded-xl border p-3 transition-colors hover:bg-brand-50"
+                    className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-primary-50"
                     style={{ borderColor: 'var(--border)' }}
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">{l.title_fa || l.title}</div>
                       <div className="mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>
-                        {SKILL_ICON[l.skill as SkillKind]} {SKILL_FA[l.skill as SkillKind]} ·{' '}
-                        <span className="num">{l.level}</span> · {l.est_minutes} دقیقه
+                        <span aria-hidden="true">{SKILL_ICON[l.skill as SkillKind]}</span>{' '}
+                        {SKILL_FA[l.skill as SkillKind]} · <span className="num">{l.level}</span> ·{' '}
+                        <span className="num">{l.est_minutes}</span> دقیقه
                       </div>
                     </div>
-                    <span style={{ color: 'var(--muted)' }}>←</span>
+                    <span aria-hidden="true" className="shrink-0" style={{ color: 'var(--muted)' }}>
+                      ‹
+                    </span>
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                هنوز درسی نساخته‌اید. روی «ساخت درس جدید» بزنید.
-              </p>
+              <Empty
+                icon="📚"
+                title="هنوز درسی نساخته‌ای"
+                description="درس‌ها بر اساس سطح و نقاط ضعف شما ساخته می‌شوند. اولین درس را همین حالا بساز."
+                action={{ label: 'ساخت اولین درس', href: '/lessons' }}
+              />
             )}
           </Card>
         </div>
@@ -194,14 +286,18 @@ export default async function DashboardPage() {
                 <Link
                   key={q.href}
                   href={q.href}
-                  className="flex items-center justify-between rounded-xl border p-3 text-sm transition-colors hover:bg-brand-50"
+                  className="flex items-center justify-between rounded-xl border p-3 text-sm transition-colors hover:bg-primary-50"
                   style={{ borderColor: 'var(--border)' }}
                 >
-                  <span>{q.icon} {q.label}</span>
+                  <span>
+                    <span aria-hidden="true">{q.icon}</span> {q.label}
+                  </span>
                   {q.badge ? (
-                    <span className="badge num bg-rose-100 text-rose-700">{q.badge}</span>
+                    <span className="badge num bg-accent-50 text-accent-800">{q.badge}</span>
                   ) : (
-                    <span style={{ color: 'var(--muted)' }}>←</span>
+                    <span aria-hidden="true" style={{ color: 'var(--muted)' }}>
+                      ‹
+                    </span>
                   )}
                 </Link>
               ))}
@@ -214,10 +310,16 @@ export default async function DashboardPage() {
             {mistakesRes.data?.length ? (
               <div className="space-y-2.5">
                 {mistakesRes.data.map((m) => (
-                  <div key={m.error_tag} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
+                  <div
+                    key={m.error_tag}
+                    className="rounded-xl border p-3"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{m.error_label_fa || m.error_tag}</span>
-                      <span className="badge num bg-amber-100 text-amber-700">{m.occurrences}×</span>
+                      <span className="badge num bg-warning-50 text-warning-800">
+                        {m.occurrences}×
+                      </span>
                     </div>
                     <div className="mt-2">
                       <GenerateLessonButton
@@ -231,7 +333,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+              <p className="text-sm leading-7" style={{ color: 'var(--muted)' }}>
                 هنوز الگوی خطایی شناسایی نشده است. با تمرین بیشتر، تحلیل دقیق‌تر می‌شود.
               </p>
             )}

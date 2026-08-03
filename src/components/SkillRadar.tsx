@@ -20,8 +20,8 @@ export default function SkillRadar({
           <Radar
             name="امتیاز"
             dataKey="score"
-            stroke="var(--color-brand-600)"
-            fill="var(--color-brand-500)"
+            stroke="var(--color-primary-600)"
+            fill="var(--color-primary-500)"
             fillOpacity={0.35}
           />
         </RadarChart>

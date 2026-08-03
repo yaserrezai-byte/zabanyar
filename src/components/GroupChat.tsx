@@ -27,7 +27,8 @@ export interface Participant {
 }
 
 /** Stable colour per participant so avatars stay recognisable. */
-const AVATAR_COLOURS = ['#1d5cf5', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
+// All six verified >= 4.5:1 with white text.
+const AVATAR_COLOURS = ['#0a6270', '#1f7a4d', '#9e5a00', '#5b3f9e', '#a63a6b', '#1c5a96'];
 function colourFor(id: string): string {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -251,7 +252,7 @@ export default function GroupChat({
             >
               <span
                 className="inline-block h-2 w-2 rounded-full"
-                style={{ background: connected ? '#10b981' : '#94a3b8' }}
+                style={{ background: connected ? 'var(--color-success-700)' : 'var(--muted)' }}
               />
               {connected ? 'متصل' : 'در حال اتصال'}
             </span>
@@ -269,7 +270,7 @@ export default function GroupChat({
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">
                     {p.name}
-                    {p.is_me && <span className="mr-1 text-xs" style={{ color: 'var(--muted)' }}> (شما)</span>}
+                    {p.is_me && <span className="ms-1 text-xs" style={{ color: 'var(--muted)' }}> (شما)</span>}
                   </div>
                   {p.level && (
                     <div className="num text-[10px]" style={{ color: 'var(--muted)' }}>{p.level}</div>
@@ -357,7 +358,7 @@ export default function GroupChat({
                       className="rounded-2xl px-3.5 py-2"
                       style={
                         mine
-                          ? { background: 'var(--color-brand-600)', color: '#fff' }
+                          ? { background: 'var(--color-primary-600)', color: '#fff' }
                           : isAi
                             ? { background: 'rgb(124 58 237 / .10)', border: '1px solid rgb(124 58 237 / .3)' }
                             : { background: 'var(--bg)', border: '1px solid var(--border)' }
@@ -389,9 +390,9 @@ export default function GroupChat({
                     </div>
 
                     {m.corrections?.length > 0 && (
-                      <div className="mt-1.5 space-y-1 rounded-xl border border-amber-200 bg-amber-50 p-2 text-xs">
+                      <div className="mt-1.5 space-y-1 rounded-xl border border-accent-100 bg-accent-50 p-2 text-xs">
                         {m.corrections.map((c, i) => (
-                          <div key={i} className="text-amber-900">
+                          <div key={i} className="text-accent-800">
                             <span className="ltr line-through opacity-60" dir="ltr">{c.wrong}</span>
                             {' → '}
                             <span className="ltr font-bold" dir="ltr">{c.right}</span>

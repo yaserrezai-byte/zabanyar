@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#1d5cf5',
+  themeColor: '#0e7c8a',
   width: 'device-width',
   initialScale: 1,
   // Let the shell fill the notch area when installed.

@@ -37,7 +37,7 @@ export default async function LessonsPage() {
             <Link key={l.id} href={`/lessons/${l.id}`}>
               <Card className="h-full transition-transform hover:-translate-y-1">
                 <div className="mb-2 flex items-center gap-2">
-                  <span className="badge bg-brand-50 text-brand-700">
+                  <span className="badge bg-primary-50 text-primary-800">
                     {SKILL_ICON[l.skill as SkillKind]} {SKILL_FA[l.skill as SkillKind]}
                   </span>
                   <LevelBadge level={l.level} showFa={false} />

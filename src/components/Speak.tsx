@@ -195,7 +195,7 @@ export default function Speak({
       onClick={speak}
       aria-label={`شنیدن تلفظ: ${text.slice(0, 40)}`}
       title="شنیدن تلفظ"
-      className={`shrink-0 rounded-lg transition-colors hover:bg-brand-50 ${className}`}
+      className={`shrink-0 rounded-lg transition-colors hover:bg-primary-50 ${className}`}
       style={{
         width: s.box,
         height: s.box,
@@ -204,7 +204,7 @@ export default function Speak({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: speaking ? 'var(--color-brand-600)' : 'var(--muted)',
+        color: speaking ? 'var(--color-primary-600)' : 'var(--muted)',
         verticalAlign: 'middle',
       }}
     >

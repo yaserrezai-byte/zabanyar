@@ -142,7 +142,7 @@ export default function QuickAssign({
             <button
               onClick={() => setSelected(allSelected ? [] : students.map((s) => s.id))}
               className="text-xs hover:underline"
-              style={{ color: 'var(--color-brand-600)' }}
+              style={{ color: 'var(--color-primary-600)' }}
             >
               {allSelected ? 'لغو انتخاب همه' : 'انتخاب همه'}
             </button>
@@ -154,13 +154,13 @@ export default function QuickAssign({
                 onClick={() => toggle(s.id)}
                 className="rounded-full border px-3 py-1.5 text-xs transition-all"
                 style={{
-                  borderColor: selected.includes(s.id) ? 'var(--color-brand-600)' : 'var(--border)',
-                  background: selected.includes(s.id) ? 'var(--color-brand-600)' : 'transparent',
+                  borderColor: selected.includes(s.id) ? 'var(--color-primary-600)' : 'var(--border)',
+                  background: selected.includes(s.id) ? 'var(--color-primary-600)' : 'transparent',
                   color: selected.includes(s.id) ? '#fff' : 'var(--fg)',
                 }}
               >
                 {s.full_name || s.email}
-                {s.current_level && <span className="num mr-1 opacity-70"> · {s.current_level}</span>}
+                {s.current_level && <span className="num ms-1 opacity-70"> · {s.current_level}</span>}
               </button>
             ))}
           </div>
@@ -175,7 +175,7 @@ export default function QuickAssign({
             <button
               key={t.title}
               onClick={() => applyTemplate(t)}
-              className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-brand-50"
+              className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-primary-50"
               style={{ borderColor: 'var(--border)' }}
             >
               {SKILL_ICON[t.skill]} {t.title}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, Spinner } from '@/components/ui';
+import { Card, ErrorState, SkeletonChat } from '@/components/ui';
 import type { Correction } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
 import Speak from '@/components/Speak';
@@ -40,6 +40,9 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showTranslation, setShowTranslation] = useState<Record<string, boolean>>({});
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [lastSent, setLastSent] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,20 +51,28 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
 
   async function openConversation(id: string) {
     setLoadingHistory(true);
+    setHistoryError(null);
     setConvId(id);
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .select('id, role, content, translation_fa, corrections')
       .eq('conversation_id', id)
       .order('created_at');
-    setMessages((data ?? []) as Msg[]);
+    if (error) {
+      setHistoryError('پیام‌های این گفت‌وگو خوانده نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.');
+      setMessages([]);
+    } else {
+      setMessages((data ?? []) as Msg[]);
+    }
     setLoadingHistory(false);
   }
 
   function newChat() {
     setConvId(undefined);
     setMessages([]);
+    setSendError(null);
+    setHistoryError(null);
   }
 
   async function send(e?: React.FormEvent) {
@@ -70,6 +81,8 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
     if (!text || loading) return;
 
     setInput('');
+    setSendError(null);
+    setLastSent(text);
     setMessages((m) => [...m, { id: `tmp-${Date.now()}`, role: 'user', content: text }]);
     setLoading(true);
 
@@ -95,20 +108,23 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
         },
       ]);
     } catch (err) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: `err-${Date.now()}`,
-          role: 'assistant',
-          content: 'متأسفم، خطایی رخ داد. دوباره تلاش کنید.',
-          translation_fa: null,
-          corrections: [],
-        },
-      ]);
+      // Surface the failure as a system error, not as words from the tutor.
+      setSendError('پیام ارسال نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.');
       console.error(err);
     } finally {
       setLoading(false);
     }
+  }
+
+  function retrySend() {
+    if (!lastSent) return;
+    // drop the un-answered user bubble, then resend the same text
+    setMessages((m) => {
+      const last = m[m.length - 1];
+      return last?.role === 'user' && last.content === lastSent ? m.slice(0, -1) : m;
+    });
+    setInput(lastSent);
+    setSendError(null);
   }
 
   return (
@@ -128,10 +144,10 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
               <button
                 key={s.label}
                 onClick={() => setScenario(s.key)}
-                className="w-full rounded-lg px-2.5 py-1.5 text-right text-sm transition-colors"
+                className="w-full rounded-lg px-2.5 py-1.5 text-start text-sm transition-colors"
                 style={
                   scenario === s.key
-                    ? { background: 'var(--color-brand-50)', color: 'var(--color-brand-700)', fontWeight: 500 }
+                    ? { background: 'var(--color-primary-50)', color: 'var(--color-primary-800)', fontWeight: 500 }
                     : {}
                 }
               >
@@ -151,8 +167,8 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                 <button
                   key={c.id}
                   onClick={() => openConversation(c.id)}
-                  className="w-full truncate rounded-lg px-2.5 py-1.5 text-right text-sm transition-colors hover:bg-brand-50"
-                  style={convId === c.id ? { background: 'var(--color-brand-50)' } : {}}
+                  className="w-full truncate rounded-lg px-2.5 py-1.5 text-start text-sm transition-colors hover:bg-primary-50"
+                  style={convId === c.id ? { background: 'var(--color-primary-50)', fontWeight: 500 } : {}}
                 >
                   {c.title}
                 </button>
@@ -172,9 +188,17 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {loadingHistory && <div className="skeleton h-20 w-full" />}
+          {loadingHistory && <SkeletonChat bubbles={4} />}
 
-          {!messages.length && !loadingHistory && (
+          {historyError && (
+            <ErrorState
+              title="گفت‌وگو باز نشد"
+              description={historyError}
+              onRetry={() => convId && openConversation(convId)}
+            />
+          )}
+
+          {!messages.length && !loadingHistory && !historyError && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="text-4xl">👋</div>
               <p className="mt-3 font-medium">سلام! بیایید انگلیسی صحبت کنیم.</p>
@@ -187,7 +211,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                   <button
                     key={s}
                     onClick={() => setInput(s)}
-                    className="ltr rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-brand-50"
+                    className="ltr rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-primary-50"
                     style={{ borderColor: 'var(--border)' }}
                     dir="ltr"
                   >
@@ -202,11 +226,25 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
             <div key={m.id} className={m.role === 'user' ? 'flex justify-start' : 'flex justify-end'}>
               <div className="max-w-[85%]">
                 <div
-                  className="rounded-2xl px-4 py-2.5"
+                  className="mb-1 text-[.7rem]"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  {m.role === 'user' ? 'شما' : '🧠 مربی'}
+                </div>
+                <div
+                  className="px-4 py-2.5"
                   style={
                     m.role === 'user'
-                      ? { background: 'var(--color-brand-600)', color: '#fff' }
-                      : { background: 'var(--bg)', border: '1px solid var(--border)' }
+                      ? {
+                          background: 'var(--color-primary-700)',
+                          color: '#fff',
+                          borderRadius: '18px 18px 18px 4px',
+                        }
+                      : {
+                          background: 'var(--card)',
+                          border: '1px solid var(--border-strong)',
+                          borderRadius: '18px 18px 4px 18px',
+                        }
                   }
                 >
                   <div className="flex items-start gap-1.5">
@@ -232,10 +270,10 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                 </div>
 
                 {m.corrections && m.corrections.length > 0 && (
-                  <div className="mt-2 space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">
-                    <div className="font-bold text-amber-900">✏️ تصحیح‌ها</div>
+                  <div className="mt-2 space-y-1.5 rounded-xl border border-accent-100 bg-accent-50 p-3 text-sm">
+                    <div className="font-bold text-accent-800">✏️ تصحیح‌ها</div>
                     {m.corrections.map((c, i) => (
-                      <div key={i} className="text-amber-900">
+                      <div key={i} className="text-accent-800">
                         <span className="ltr inline-block line-through opacity-60" dir="ltr">{c.wrong}</span>
                         {' → '}
                         <span className="ltr inline-block font-bold" dir="ltr">{c.right}</span>
@@ -250,11 +288,37 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
           ))}
 
           {loading && (
-            <div className="flex justify-end">
-              <div className="rounded-2xl border px-4 py-3" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
-                <Spinner size={16} />
+            <div className="flex justify-end" role="status" aria-label="مربی در حال نوشتن است">
+              <div className="max-w-[85%]">
+                <div className="mb-1 text-[.7rem]" style={{ color: 'var(--muted)' }}>
+                  🧠 مربی
+                </div>
+                <div
+                  className="flex items-center gap-1.5 px-4 py-3.5"
+                  style={{
+                    background: 'var(--card)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: '18px 18px 4px 18px',
+                  }}
+                >
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="typing-dot h-2 w-2 rounded-full"
+                      style={{
+                        background: 'var(--muted)',
+                        animationDelay: `${i * 0.16}s`,
+                      }}
+                    />
+                  ))}
+                  <span className="sr-only">در حال نوشتن…</span>
+                </div>
               </div>
             </div>
+          )}
+
+          {sendError && (
+            <ErrorState compact title="ارسال نشد" description={sendError} onRetry={retrySend} />
           )}
 
           <div ref={endRef} />

@@ -21,11 +21,11 @@ export default function OfflineActions() {
     <div className="mt-5 space-y-3">
       <div
         className="flex items-center justify-center gap-2 text-sm"
-        style={{ color: online ? '#059669' : 'var(--muted)' }}
+        style={{ color: online ? 'var(--color-success-700)' : 'var(--muted)' }}
       >
         <span
           className="inline-block h-2.5 w-2.5 rounded-full"
-          style={{ background: online ? '#10b981' : '#94a3b8' }}
+          style={{ background: online ? 'var(--color-success-700)' : 'var(--muted)' }}
         />
         {online ? 'اتصال برقرار شد' : 'در انتظار اتصال…'}
       </div>

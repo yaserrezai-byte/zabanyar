@@ -80,8 +80,8 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
                 onClick={() => setQuestion(p.en)}
                 className="rounded-full border px-3 py-1.5 text-xs transition-colors"
                 style={{
-                  borderColor: question === p.en ? 'var(--color-brand-600)' : 'var(--border)',
-                  background: question === p.en ? 'var(--color-brand-50)' : 'transparent',
+                  borderColor: question === p.en ? 'var(--color-primary-600)' : 'var(--border)',
+                  background: question === p.en ? 'var(--color-primary-50)' : 'transparent',
                 }}
               >
                 {p.fa}
@@ -151,7 +151,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
               className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white num"
               style={{
                 background:
-                  result.score >= 80 ? '#10b981' : result.score >= 55 ? '#f59e0b' : '#f43f5e',
+                  result.score >= 80 ? 'var(--color-success-700)' : result.score >= 55 ? 'var(--color-warning-700)' : 'var(--color-error-600)',
               }}
             >
               {Math.round(result.score)}
@@ -161,7 +161,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
               <div className="mt-2">
                 <Progress
                   value={result.score}
-                  color={result.score >= 80 ? '#10b981' : result.score >= 55 ? '#f59e0b' : '#f43f5e'}
+                  color={result.score >= 80 ? 'var(--color-success-700)' : result.score >= 55 ? 'var(--color-warning-700)' : 'var(--color-error-600)'}
                 />
               </div>
             </div>
@@ -182,14 +182,14 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
               <div className="mb-2 text-sm font-bold">🔍 اشتباهات ({result.errors.length})</div>
               <div className="space-y-2">
                 {result.errors.map((e, i) => (
-                  <div key={i} className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
-                    <div className="text-rose-900">
+                  <div key={i} className="rounded-xl border border-error-100 bg-error-50 p-3 text-sm">
+                    <div className="text-error-700">
                       <span className="ltr inline-block line-through opacity-60" dir="ltr">{e.wrong}</span>
                       {' → '}
                       <span className="ltr inline-block font-bold" dir="ltr">{e.right}</span>
                       <Speak text={e.right} size="xs" />
                     </div>
-                    <div className="mt-1 text-xs leading-7 text-rose-800">{e.note_fa}</div>
+                    <div className="mt-1 text-xs leading-7 text-error-700">{e.note_fa}</div>
                   </div>
                 ))}
               </div>
@@ -198,17 +198,17 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
 
           <div className="grid gap-3 sm:grid-cols-2">
             {result.strengths_fa?.length > 0 && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                <div className="mb-1.5 text-sm font-bold text-emerald-900">💪 نقاط قوت</div>
-                <ul className="space-y-1 text-sm text-emerald-800">
+              <div className="rounded-xl border border-success-100 bg-success-50 p-3">
+                <div className="mb-1.5 text-sm font-bold text-success-800">💪 نقاط قوت</div>
+                <ul className="space-y-1 text-sm text-success-800">
                   {result.strengths_fa.map((s, i) => <li key={i}>• {s}</li>)}
                 </ul>
               </div>
             )}
             {result.improvements_fa?.length > 0 && (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                <div className="mb-1.5 text-sm font-bold text-sky-900">📈 برای بهبود</div>
-                <ul className="space-y-1 text-sm text-sky-800">
+              <div className="rounded-xl border border-info-100 bg-info-50 p-3">
+                <div className="mb-1.5 text-sm font-bold text-info-800">📈 برای بهبود</div>
+                <ul className="space-y-1 text-sm text-info-800">
                   {result.improvements_fa.map((s, i) => <li key={i}>• {s}</li>)}
                 </ul>
               </div>

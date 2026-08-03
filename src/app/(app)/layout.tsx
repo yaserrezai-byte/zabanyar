@@ -42,8 +42,14 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
+      <a href="#main" className="skip-link">
+        رفتن به محتوای اصلی
+      </a>
       <AppNav profile={profile as Profile} />
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+      {/* pb-nav leaves room for the mobile bottom nav; on desktop it collapses */}
+      <main id="main" className="pb-nav mx-auto max-w-7xl px-4 py-6">
+        {children}
+      </main>
     </div>
   );
 }

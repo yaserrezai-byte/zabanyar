@@ -47,7 +47,7 @@ export default function SubmissionReview({
   const aiScore = submission.score != null ? Math.round(Number(submission.score)) : null;
   const hasFeedback = Boolean(submission.teacher_feedback);
 
-  const colour = (s: number) => (s >= 80 ? '#10b981' : s >= 55 ? '#f59e0b' : '#f43f5e');
+  const colour = (s: number) => (s >= 80 ? 'var(--color-success-700)' : s >= 55 ? 'var(--color-warning-700)' : 'var(--color-error-600)');
 
   async function save() {
     setSaving(true);
@@ -80,7 +80,7 @@ export default function SubmissionReview({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {showStudent && studentName && (
-            <div className="mb-1 text-xs font-medium" style={{ color: 'var(--color-brand-600)' }}>
+            <div className="mb-1 text-xs font-medium" style={{ color: 'var(--color-primary-600)' }}>
               👤 {studentName}
             </div>
           )}
@@ -108,14 +108,14 @@ export default function SubmissionReview({
           {submission.teacher_score != null && (
             <span
               className="num badge text-white"
-              style={{ background: 'var(--color-brand-600)' }}
+              style={{ background: 'var(--color-primary-600)' }}
               title="امتیاز مدرس"
             >
               مدرس {Math.round(submission.teacher_score)}
             </span>
           )}
           {hasFeedback && !submission.teacher_score && (
-            <span className="badge bg-emerald-100 text-emerald-700">بازبینی شد</span>
+            <span className="badge bg-success-50 text-success-800">بازبینی شد</span>
           )}
         </div>
       </div>
@@ -127,8 +127,8 @@ export default function SubmissionReview({
       )}
 
       {submission.teacher_feedback && !open && (
-        <div className="mt-2 rounded-lg border border-brand-200 bg-brand-50 p-2.5 text-sm leading-7">
-          <b className="text-brand-700">بازخورد شما:</b> {submission.teacher_feedback}
+        <div className="mt-2 rounded-lg border border-primary-200 bg-primary-50 p-2.5 text-sm leading-7">
+          <b className="text-primary-800">بازخورد شما:</b> {submission.teacher_feedback}
         </div>
       )}
 
@@ -146,7 +146,7 @@ export default function SubmissionReview({
               <button
                 key={n}
                 onClick={() => setFeedback((f) => (f ? `${f} ${n}` : n))}
-                className="rounded-full border px-2.5 py-1 text-[11px] transition-colors hover:bg-brand-50"
+                className="rounded-full border px-2.5 py-1 text-[11px] transition-colors hover:bg-primary-50"
                 style={{ borderColor: 'var(--border)' }}
               >
                 + {n}

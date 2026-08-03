@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card, LevelBadge, Progress, Spinner, Stat } from '@/components/ui';
+import { BridgeRing, Card, ErrorState, LevelBadge, Progress, Spinner, Stat } from '@/components/ui';
 import type { VocabularyMemory } from '@/types/db';
 import { announceBadges } from '@/lib/badge-events';
 import Speak from '@/components/Speak';
 
 const QUALITY = [
-  { q: 0, label: 'بلد نبودم', emoji: '😰', color: '#f43f5e' },
-  { q: 3, label: 'سخت بود', emoji: '😅', color: '#f59e0b' },
-  { q: 4, label: 'خوب بود', emoji: '🙂', color: '#3b82f6' },
-  { q: 5, label: 'خیلی راحت', emoji: '😎', color: '#10b981' },
+  { q: 0, label: 'بلد نبودم', emoji: '😰', color: 'var(--color-error-600)' },
+  { q: 3, label: 'سخت بود', emoji: '😅', color: 'var(--color-warning-700)' },
+  { q: 4, label: 'خوب بود', emoji: '🙂', color: 'var(--color-info-700)' },
+  { q: 5, label: 'خیلی راحت', emoji: '😎', color: 'var(--color-success-700)' },
 ];
 
 export default function VocabReview({
@@ -29,23 +29,35 @@ export default function VocabReview({
   const [revealed, setRevealed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(0);
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [pendingQuality, setPendingQuality] = useState<number | null>(null);
 
   const current = words[idx];
 
   async function rate(quality: number) {
     if (!current || saving) return;
     setSaving(true);
+    setRateError(null);
     try {
       const res = await fetch('/api/vocabulary/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word_id: current.id, quality }),
       });
+      if (!res.ok) throw new Error('review failed');
       const payload = await res.json().catch(() => null);
       announceBadges(payload?.new_badges);
     } catch (e) {
+      // Stay on the same card: advancing would silently lose the rating.
       console.error(e);
+      setRateError(
+        'این مرور ثبت نشد و زمان‌بندی لغت به‌روز نشده است. اتصال اینترنت را بررسی کن و دوباره تلاش کن.'
+      );
+      setPendingQuality(quality);
+      setSaving(false);
+      return;
     }
+    setPendingQuality(null);
     setDone((d) => d + 1);
     setRevealed(false);
     setSaving(false);
@@ -68,7 +80,18 @@ export default function VocabReview({
           <Stat label="مرور امروز" value={done} icon="✅" />
         </div>
         <Card className="p-10 text-center">
-          <div className="text-5xl">🎉</div>
+          <div className="flex justify-center">
+            <BridgeRing
+              value={done}
+              max={Math.max(done, 1)}
+              size={96}
+              stroke={9}
+              color="var(--color-success-700)"
+              ariaLabel={`${done} لغت مرور شد`}
+            >
+              <span className="text-3xl" aria-hidden="true">🎉</span>
+            </BridgeRing>
+          </div>
           <h2 className="mt-3 text-xl font-bold">
             {done > 0 ? 'مرور امروز تمام شد!' : 'همه لغات به‌روز هستند'}
           </h2>
@@ -98,20 +121,22 @@ export default function VocabReview({
       <div>
         <div className="mb-2 flex justify-between text-sm">
           <span style={{ color: 'var(--muted)' }}>پیشرفت مرور</span>
-          <span className="num" style={{ color: 'var(--muted)' }}>{idx} / {words.length}</span>
+          <span className="num" style={{ color: 'var(--muted)' }}>
+            {idx} / {words.length}
+          </span>
         </div>
-        <Progress value={idx} max={words.length} />
+        <Progress value={idx} max={words.length} label={`${idx} از ${words.length} لغت مرور شد`} />
       </div>
 
       <Card className="min-h-[19rem] p-8 text-center">
         <div className="mb-3 flex items-center justify-center gap-2">
           <LevelBadge level={current.level} showFa={false} />
           {current.part_of_speech && (
-            <span className="ltr badge bg-slate-100 text-slate-700" dir="ltr">
+            <span className="ltr badge bg-primary-50 text-primary-800" dir="ltr">
               {current.part_of_speech}
             </span>
           )}
-          <span className="badge bg-slate-100 text-slate-700">
+          <span className="badge bg-primary-50 text-primary-800">
             تسلط: <b className="num">{Math.round(current.mastery * 100)}٪</b>
           </span>
         </div>
@@ -167,7 +192,22 @@ export default function VocabReview({
                 </button>
               ))}
             </div>
-            {saving && <div className="mt-3"><Spinner /></div>}
+            {saving && (
+              <div className="mt-3">
+                <Spinner />
+              </div>
+            )}
+
+            {rateError && (
+              <div className="mt-4 text-start">
+                <ErrorState
+                  compact
+                  title="ثبت مرور انجام نشد"
+                  description={rateError}
+                  onRetry={() => pendingQuality !== null && rate(pendingQuality)}
+                />
+              </div>
+            )}
           </div>
         )}
       </Card>

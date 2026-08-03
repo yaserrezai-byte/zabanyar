@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, LevelBadge, SectionTitle, Stat } from '@/components/ui';
+import { Card, Empty, LevelBadge, SectionTitle, Stat } from '@/components/ui';
 import PronunciationPractice from '@/components/PronunciationPractice';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
 import type { CefrLevel } from '@/types/db';
@@ -34,14 +34,22 @@ export default function PronunciationWorkshop({
     ? Math.round(scored.reduce((s, r) => s + Number(r.accuracy_score), 0) / scored.length)
     : 0;
 
-  const scoreColor = (s: number) => (s >= 80 ? '#10b981' : s >= 55 ? '#f59e0b' : '#f43f5e');
+  const scoreColor = (s: number) =>
+    s >= 80
+      ? 'var(--color-success-700)'
+      : s >= 55
+        ? 'var(--color-warning-700)'
+        : 'var(--color-error-600)';
 
   if (!sentences.length) {
     return (
-      <Card className="p-10 text-center">
-        <div className="text-4xl">🎤</div>
-        <h2 className="mt-3 font-bold">جمله‌ای برای تمرین موجود نیست</h2>
-      </Card>
+      <Empty
+        icon="🎤"
+        title="هنوز جمله‌ای برای تمرین تلفظ آماده نیست"
+        description="جمله‌های تمرین از درس‌های شما ساخته می‌شوند. یک درس بسازید تا جمله‌های متناسب با سطحتان اینجا ظاهر شود."
+        action={{ label: 'ساخت درس جدید', href: '/lessons' }}
+        secondaryAction={{ label: 'گفت‌وگو با مربی', href: '/tutor' }}
+      />
     );
   }
 
@@ -49,7 +57,7 @@ export default function PronunciationWorkshop({
     <div className="space-y-6 fade-in">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">🎤 تمرین تلفظ</h1>
+          <h1 className="t-h1">🎤 تمرین تلفظ</h1>
           <p className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             جمله را با صدای بلند بخوانید تا تلفظتان تحلیل شود
             {level && <>· سطح شما: <LevelBadge level={level} /></>}
@@ -73,10 +81,12 @@ export default function PronunciationWorkshop({
                 <button
                   key={s.id}
                   onClick={() => setSelected(s)}
-                  className="w-full rounded-xl border-2 p-3 text-right transition-all"
+                  aria-pressed={selected.id === s.id}
+                  className="w-full rounded-xl border-2 p-3 text-start transition-all"
                   style={{
-                    borderColor: selected.id === s.id ? 'var(--color-brand-600)' : 'var(--border)',
-                    background: selected.id === s.id ? 'var(--color-brand-50)' : 'transparent',
+                    borderColor:
+                      selected.id === s.id ? 'var(--color-primary-600)' : 'var(--border-strong)',
+                    background: selected.id === s.id ? 'var(--color-primary-50)' : 'transparent',
                   }}
                 >
                   <div className="flex items-start gap-1">
@@ -136,7 +146,7 @@ export default function PronunciationWorkshop({
                         {Math.round(Number(r.accuracy_score))}
                       </span>
                     ) : (
-                      <span className="badge shrink-0 bg-slate-100 text-slate-600">—</span>
+                      <span className="badge shrink-0 bg-primary-50 text-primary-800">—</span>
                     )}
                   </div>
                 ))}

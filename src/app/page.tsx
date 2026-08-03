@@ -59,12 +59,12 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:py-24">
-        <span className="badge bg-brand-50 text-brand-700 mb-5">
+        <span className="badge bg-primary-50 text-primary-800 mb-5">
           ✨ ساخته‌شده برای فارسی‌زبانان
         </span>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight sm:text-5xl">
           انگلیسی را با مربی هوشمندی یاد بگیرید که{' '}
-          <span style={{ color: 'var(--color-brand-600)' }}>شما را می‌شناسد</span>
+          <span style={{ color: 'var(--color-primary-600)' }}>شما را می‌شناسد</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base leading-8 sm:text-lg" style={{ color: 'var(--muted)' }}>
           زبان‌یار سطح شما را می‌سنجد، اشتباهات تکرارشونده‌تان را کشف می‌کند و برای هر ضعف،
@@ -105,7 +105,7 @@ export default function HomePage() {
             <div key={s.n} className="card p-6 text-center">
               <div
                 className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold text-white"
-                style={{ background: 'var(--color-brand-600)' }}
+                style={{ background: 'var(--color-primary-600)' }}
               >
                 {s.n}
               </div>
@@ -120,7 +120,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-4xl px-4 py-16">
         <div
           className="rounded-3xl p-10 text-center text-white"
-          style={{ background: 'linear-gradient(135deg, var(--color-brand-600), var(--color-brand-800))' }}
+          style={{ background: 'linear-gradient(135deg, var(--color-primary-700), var(--color-primary-900))' }}
         >
           <h2 className="text-2xl font-bold sm:text-3xl">همین امروز شروع کنید</h2>
           <p className="mx-auto mt-3 max-w-lg opacity-90">
@@ -129,7 +129,7 @@ export default function HomePage() {
           <Link
             href="/signup"
             className="btn mt-6 bg-white px-8 py-3 text-base font-bold"
-            style={{ color: 'var(--color-brand-700)' }}
+            style={{ color: 'var(--color-primary-700)' }}
           >
             ساخت حساب رایگان
           </Link>

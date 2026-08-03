@@ -75,20 +75,20 @@ export default async function TeacherOverviewPage() {
                 <Link
                   key={st.id}
                   href={`/teacher/students/${st.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-brand-50"
+                  className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:bg-primary-50"
                   style={{ borderColor: 'var(--border)' }}
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{st.full_name || 'بدون نام'}</div>
                     <div className="mt-0.5 flex flex-wrap gap-1.5 text-xs">
                       {!st.placement_done && (
-                        <span className="badge bg-amber-100 text-amber-700">تعیین سطح نشده</span>
+                        <span className="badge bg-warning-50 text-warning-800">تعیین سطح نشده</span>
                       )}
                       {st.activeDays7 === 0 && (
-                        <span className="badge bg-rose-100 text-rose-700">۷ روز غیرفعال</span>
+                        <span className="badge bg-error-50 text-error-700">۷ روز غیرفعال</span>
                       )}
                       {st.pendingReview > 0 && (
-                        <span className="badge num bg-sky-100 text-sky-700">
+                        <span className="badge num bg-info-50 text-info-800">
                           {st.pendingReview} پاسخ بازبینی‌نشده
                         </span>
                       )}
@@ -114,7 +114,7 @@ export default async function TeacherOverviewPage() {
                 <Link
                   key={st.id}
                   href={`/teacher/students/${st.id}`}
-                  className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-brand-50"
+                  className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-primary-50"
                   style={{ borderColor: 'var(--border)' }}
                 >
                   <span className="num w-5 text-sm font-bold" style={{ color: 'var(--muted)' }}>
@@ -127,7 +127,7 @@ export default async function TeacherOverviewPage() {
                       <span className="num">{st.activeDays7}</span> روز فعال
                     </div>
                   </div>
-                  <span className="badge num bg-emerald-100 text-emerald-700">{st.xp7} XP</span>
+                  <span className="badge num bg-success-50 text-success-800">{st.xp7} XP</span>
                 </Link>
               ))}
             </div>

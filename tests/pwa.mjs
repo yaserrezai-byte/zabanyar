@@ -47,10 +47,10 @@ let manifest;
 
   // colours must match the Tailwind palette in globals.css
   const css = fs.readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');
-  ok('theme_color matches --color-brand-600', manifest.theme_color === '#1d5cf5', manifest.theme_color);
-  ok('  brand-600 really is #1d5cf5 in globals.css', css.includes('--color-brand-600: #1d5cf5'));
-  ok('background_color matches --bg', manifest.background_color === '#f6f8fc', manifest.background_color);
-  ok('  --bg really is #f6f8fc in globals.css', css.includes('--bg: #f6f8fc'));
+  ok('theme_color matches --color-primary-600', manifest.theme_color === '#0e7c8a', manifest.theme_color);
+  ok('  primary-600 really is #0e7c8a in globals.css', css.includes('--color-primary-600: #0e7c8a'));
+  ok('background_color matches --bg', manifest.background_color === '#fbfaf7', manifest.background_color);
+  ok('  --bg really is #fbfaf7 in globals.css', css.includes('--bg: #fbfaf7'));
 
   ok('has shortcuts', Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 1);
   ok('shortcut labels are Persian',

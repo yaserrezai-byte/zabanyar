@@ -55,13 +55,14 @@ export default function BadgeToast() {
   if (!current) return null;
 
   const style = TIER_STYLE[current.tier] ?? TIER_STYLE.bronze;
-  const colours = ['#f59e0b', '#10b981', '#337dff', '#f43f5e', '#8b5cf6'];
+  const colours = ['var(--color-warning-700)', 'var(--color-success-700)', '#337dff', 'var(--color-error-600)', '#8b5cf6'];
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="toast-in fixed inset-x-3 bottom-20 z-[70] mx-auto max-w-sm sm:inset-x-auto sm:bottom-6 sm:left-6 sm:right-auto"
+      className="toast-in fixed inset-x-3 z-[70] mx-auto max-w-sm sm:inset-x-auto sm:bottom-6 sm:start-6 lg:bottom-6"
+      style={{ bottom: 'calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 0.75rem)' }}
     >
       <div
         className="card relative overflow-hidden p-4 shadow-lg"

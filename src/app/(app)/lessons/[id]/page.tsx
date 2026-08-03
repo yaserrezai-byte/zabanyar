@@ -32,17 +32,17 @@ export default async function LessonPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 fade-in">
-      <Link href="/lessons" className="text-sm hover:underline" style={{ color: 'var(--color-brand-600)' }}>
+      <Link href="/lessons" className="text-sm hover:underline" style={{ color: 'var(--color-primary-600)' }}>
         → بازگشت به درس‌ها
       </Link>
 
       <Card>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="badge bg-brand-50 text-brand-700">
+          <span className="badge bg-primary-50 text-primary-800">
             {SKILL_ICON[l.skill as SkillKind]} {SKILL_FA[l.skill as SkillKind]}
           </span>
           <LevelBadge level={l.level} />
-          <span className="badge bg-slate-100 text-slate-700">⏱ {l.est_minutes} دقیقه</span>
+          <span className="badge bg-primary-50 text-primary-800">⏱ {l.est_minutes} دقیقه</span>
         </div>
         <h1 className="text-2xl font-bold leading-9">{l.title_fa || l.title}</h1>
         <p className="ltr mt-1 flex items-center gap-1.5 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">
@@ -55,7 +55,7 @@ export default async function LessonPage({
       {sections.map((s, i) => (
         <Card key={i}>
           <h2 className="mb-3 text-lg font-bold">
-            <span className="num ml-2" style={{ color: 'var(--color-brand-600)' }}>{i + 1}.</span>
+            <span className="num me-2" style={{ color: 'var(--color-primary-600)' }}>{i + 1}.</span>
             {s.heading_fa}
           </h2>
           {s.body_fa && <p className="leading-9">{s.body_fa}</p>}
@@ -75,7 +75,7 @@ export default async function LessonPage({
           )}
 
           {s.tip_fa && (
-            <div className="mt-4 rounded-xl border-r-4 bg-amber-50 p-3 text-sm leading-7 text-amber-900" style={{ borderColor: '#f59e0b' }}>
+            <div className="mt-4 rounded-xl border-r-4 bg-accent-50 p-3 text-sm leading-7 text-accent-800" style={{ borderColor: 'var(--color-warning-700)' }}>
               💡 <b>نکته:</b> {s.tip_fa}
             </div>
           )}

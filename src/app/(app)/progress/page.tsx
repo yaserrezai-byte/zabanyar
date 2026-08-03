@@ -132,7 +132,7 @@ export default async function ProgressPage() {
                 <div key={m.id} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium">{m.error_label_fa || m.error_tag}</span>
-                    <span className={`badge num ${m.resolved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`badge num ${m.resolved ? 'bg-success-50 text-success-800' : 'bg-warning-50 text-warning-800'}`}>
                       {m.occurrences}×
                     </span>
                   </div>
@@ -142,7 +142,7 @@ export default async function ProgressPage() {
                     </div>
                   )}
                   <div className="mt-2">
-                    <Progress value={m.severity * 100} height={5} color="#f59e0b" />
+                    <Progress value={m.severity * 100} height={5} color="var(--color-warning-700)" />
                   </div>
                 </div>
               ))}

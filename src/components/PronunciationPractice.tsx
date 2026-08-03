@@ -279,15 +279,15 @@ export default function PronunciationPractice({
   }
 
   const seconds = (elapsed / 1000).toFixed(1);
-  const scoreColor = (s: number) => (s >= 80 ? '#10b981' : s >= 55 ? '#f59e0b' : '#f43f5e');
+  const scoreColor = (s: number) => (s >= 80 ? 'var(--color-success-700)' : s >= 55 ? 'var(--color-warning-700)' : 'var(--color-error-600)');
 
   return (
     <Card className="fade-in">
       {/* ---------- target sentence ---------- */}
       <div className="mb-4">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="badge bg-brand-50 text-brand-700">🗣️ تمرین تلفظ</span>
-          <span className="badge bg-slate-100 text-slate-700">{sentence.focus_fa}</span>
+          <span className="badge bg-primary-50 text-primary-800">🗣️ تمرین تلفظ</span>
+          <span className="badge bg-primary-50 text-primary-800">{sentence.focus_fa}</span>
         </div>
 
         <div className="flex items-start gap-2">
@@ -319,15 +319,17 @@ export default function PronunciationPractice({
         ) : (
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-2">
-              <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-rose-500" />
+              <span className="inline-block h-3 w-3 animate-pulse rounded-full"
+                style={{ background: 'var(--color-error-600)' }} />
               <span className="num font-medium">{seconds} ثانیه</span>
             </div>
             <div className="flex justify-center gap-1" aria-hidden>
               {Array.from({ length: 9 }).map((_, i) => (
                 <span
                   key={i}
-                  className="w-1.5 rounded-full bg-rose-400"
+                  className="w-1.5 rounded-full"
                   style={{
+                    background: 'var(--color-error-600)',
                     height: 10 + ((elapsed / 90 + i * 7) % 26),
                     transition: 'height .12s linear',
                   }}
@@ -428,17 +430,17 @@ export default function PronunciationPractice({
 
           <div className="grid gap-3 sm:grid-cols-2">
             {result.strengths_fa?.length > 0 && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                <div className="mb-1.5 text-sm font-bold text-emerald-900">💪 نقاط قوت</div>
-                <ul className="space-y-1 text-sm leading-7 text-emerald-800">
+              <div className="rounded-xl border border-success-100 bg-success-50 p-3">
+                <div className="mb-1.5 text-sm font-bold text-success-800">💪 نقاط قوت</div>
+                <ul className="space-y-1 text-sm leading-7 text-success-800">
                   {result.strengths_fa.map((s, i) => <li key={i}>• {s}</li>)}
                 </ul>
               </div>
             )}
             {result.improvements_fa?.length > 0 && (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                <div className="mb-1.5 text-sm font-bold text-sky-900">📈 برای بهبود</div>
-                <ul className="space-y-1 text-sm leading-7 text-sky-800">
+              <div className="rounded-xl border border-info-100 bg-info-50 p-3">
+                <div className="mb-1.5 text-sm font-bold text-info-800">📈 برای بهبود</div>
+                <ul className="space-y-1 text-sm leading-7 text-info-800">
                   {result.improvements_fa.map((s, i) => <li key={i}>• {s}</li>)}
                 </ul>
               </div>

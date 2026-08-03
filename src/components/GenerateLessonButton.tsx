@@ -49,7 +49,7 @@ export default function GenerateLessonButton({
       >
         {loading ? <><Spinner size={14} /> در حال ساخت…</> : label}
       </button>
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-error-700">{error}</p>}
     </div>
   );
 }

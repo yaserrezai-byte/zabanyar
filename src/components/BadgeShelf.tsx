@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, Progress, SectionTitle, Spinner } from '@/components/ui';
+import { Card, ErrorState, Progress, SectionTitle } from '@/components/ui';
 import { TIER_STYLE, type BadgeTier } from '@/lib/gamification';
 
 interface BadgeView {
@@ -26,6 +26,8 @@ interface Payload {
 export default function BadgeShelf({ compact = false }: { compact?: boolean }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [filter, setFilter] = useState<'all' | 'earned' | 'locked'>('all');
 
   useEffect(() => {
@@ -33,22 +35,46 @@ export default function BadgeShelf({ compact = false }: { compact?: boolean }) {
     fetch('/api/badges')
       .then((r) => r.json())
       .then((d) => {
-        if (alive && !d.error) setData(d);
+        if (!alive) return;
+        if (d?.error) setFailed(true);
+        else setData(d);
       })
-      .catch(() => {})
+      .catch(() => alive && setFailed(true))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [attempt]);
+
+  function retry() {
+    setLoading(true);
+    setFailed(false);
+    setAttempt((a) => a + 1);
+  }
 
   if (loading) {
+    // shaped like the real shelf: title, progress bar, grid of badge tiles
     return (
-      <Card>
-        <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
-          <Spinner size={16} /> در حال بارگذاری نشان‌ها…
+      <Card aria-busy="true" aria-label="در حال بارگذاری نشان‌ها">
+        <div className="skeleton mb-2 h-5 w-44" />
+        <div className="skeleton mb-4 h-3 w-32" />
+        <div className="skeleton mb-4 h-2 w-full rounded-full" />
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton h-24" />
+          ))}
         </div>
       </Card>
+    );
+  }
+
+  if (failed && !data) {
+    return (
+      <ErrorState
+        title="نشان‌ها بارگذاری نشد"
+        description="اتصال اینترنت را بررسی کن و دوباره تلاش کن."
+        onRetry={retry}
+      />
     );
   }
 
@@ -85,7 +111,7 @@ export default function BadgeShelf({ compact = false }: { compact?: boolean }) {
                   className="rounded-lg px-2.5 py-1 text-xs transition-colors"
                   style={
                     filter === k
-                      ? { background: 'var(--color-brand-50)', color: 'var(--color-brand-700)', fontWeight: 500 }
+                      ? { background: 'var(--color-primary-50)', color: 'var(--color-primary-700)', fontWeight: 500 }
                       : { color: 'var(--muted)' }
                   }
                 >
@@ -98,7 +124,7 @@ export default function BadgeShelf({ compact = false }: { compact?: boolean }) {
       />
 
       <div className="mb-4">
-        <Progress value={pct} color="var(--color-accent-500)" />
+        <Progress value={pct} color="var(--color-accent-700)" />
       </div>
 
       {visible.length === 0 ? (
@@ -124,7 +150,7 @@ export default function BadgeShelf({ compact = false }: { compact?: boolean }) {
                 }}
               >
                 {b.earned && !b.seen && (
-                  <span className="absolute left-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
+                  <span className="absolute end-1.5 top-1.5 h-2 w-2 rounded-full" style={{ background: 'var(--color-error-600)' }} />
                 )}
 
                 <div className={`text-3xl ${b.earned ? 'badge-pop' : ''}`}>{b.icon}</div>
