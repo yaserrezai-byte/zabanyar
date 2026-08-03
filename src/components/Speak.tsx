@@ -6,9 +6,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * زبان‌یار | Speak — pronunciation for any English text
  *
  * Uses the browser's built-in Web Speech API: free, offline on most
- * devices, and no API key. Voice selection prefers a real en-US/en-GB
- * voice so Persian-speaking learners hear authentic pronunciation
- * rather than a Persian voice reading English letters.
+ * devices, and no API key.
+ *
+ * Accent policy: American English (en-US) only. Learners should hear one
+ * consistent accent — mixing US and UK voices across screens teaches
+ * contradictory pronunciations (e.g. "schedule", "water", rhotic /r/).
+ * A non-US English voice is used only as a last resort when the device
+ * ships no en-US voice at all.
  * ============================================================ */
 
 let cachedVoices: SpeechSynthesisVoice[] | null = null;
@@ -50,27 +54,54 @@ function loadVoices(): Promise<SpeechSynthesisVoice[]> {
   return voicesPromise;
 }
 
-/** Pick the most natural English voice available. */
+/** Normalise a voice's BCP-47 tag: 'en_US', 'en-us' -> 'en-us'. */
+function tag(v: SpeechSynthesisVoice): string {
+  return (v.lang ?? '').toLowerCase().replace('_', '-');
+}
+
+function isAmerican(v: SpeechSynthesisVoice): boolean {
+  return tag(v).startsWith('en-us');
+}
+
+/**
+ * Pick the best American English voice available.
+ *
+ * Order: named high-quality en-US voices -> any en-US voice ->
+ * generic 'en' -> any English voice (last resort).
+ */
 function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   if (!voices.length) return null;
 
-  const english = voices.filter((v) => v.lang?.toLowerCase().startsWith('en'));
+  const english = voices.filter((v) => tag(v).startsWith('en'));
   if (!english.length) return null;
 
-  // Prefer higher-quality named voices, then US/GB, then anything English.
+  const american = english.filter(isAmerican);
+
+  // Known-good US voices across Chrome / Safari / Edge / Android.
   const preferred = [
-    /google.*us english/i,
-    /google uk english female/i,
+    /google us english/i,
     /samantha/i,
-    /microsoft (aria|jenny|guy|zira|david)/i,
-    /en-us/i,
-    /en-gb/i,
+    /^alex$/i,
+    /microsoft (aria|jenny|guy|davis|christopher|eric|michelle)/i,
+    /microsoft (zira|david|mark)/i,
+    /en-us-.*(neural|wavenet)/i,
   ];
 
   for (const pattern of preferred) {
-    const hit = english.find((v) => pattern.test(v.name) || pattern.test(v.lang));
+    const hit = american.find((v) => pattern.test(v.name));
     if (hit) return hit;
   }
+
+  // Any en-US voice, preferring a local (offline, usually better) one.
+  if (american.length) {
+    return american.find((v) => v.localService) ?? american[0];
+  }
+
+  // No en-US on this device: accept a region-less 'en' before a
+  // definitely-non-US accent such as en-GB or en-AU.
+  const neutral = english.find((v) => tag(v) === 'en');
+  if (neutral) return neutral;
+
   return english[0];
 }
 
@@ -145,7 +176,9 @@ export default function Speak({
       const voice = pickEnglishVoice(voices);
 
       const u = new SpeechSynthesisUtterance(clean);
-      u.lang = voice?.lang || 'en-US';
+      // Always request American English; only defer to the voice's own tag
+      // when that voice is itself en-US.
+      u.lang = voice && isAmerican(voice) ? voice.lang : 'en-US';
       if (voice) u.voice = voice;
       // A single word is clearer read a little slower.
       u.rate = slow ? 0.7 : clean.split(/\s+/).length === 1 ? 0.8 : 0.92;

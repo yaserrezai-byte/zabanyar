@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, generateLesson } from '@/lib/ai/service';
 import { templateForTag } from '@/lib/ai/local-engine';
+import { shuffleExercise } from '@/lib/ai/shuffle';
 import type { CefrLevel, SkillKind } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -124,20 +125,28 @@ export async function POST(req: Request) {
     // exercises
     if (generated.exercises?.length) {
       await supabase.from('exercises').insert(
-        generated.exercises.slice(0, 12).map((ex, i) => ({
-          lesson_id: lesson.id,
-          user_id: user.id,
-          kind: ['mcq', 'fill_blank'].includes(ex.kind) ? ex.kind : 'mcq',
-          skill,
-          level,
-          prompt: ex.prompt,
-          prompt_fa: ex.prompt_fa ?? null,
-          options: ex.options ?? [],
-          correct_answer: ex.correct_answer ?? 0,
-          explanation_fa: ex.explanation_fa ?? null,
-          points: 10,
-          order_index: i,
-        }))
+        generated.exercises.slice(0, 12).map((ex, i) => {
+          // Randomise option order so the answer is not predictable by
+          // position (the hand-written bank is heavily biased to B).
+          const shuffled = shuffleExercise({
+            options: ex.options ?? [],
+            correct_answer: ex.correct_answer ?? 0,
+          });
+          return {
+            lesson_id: lesson.id,
+            user_id: user.id,
+            kind: ['mcq', 'fill_blank'].includes(ex.kind) ? ex.kind : 'mcq',
+            skill,
+            level,
+            prompt: ex.prompt,
+            prompt_fa: ex.prompt_fa ?? null,
+            options: shuffled.options,
+            correct_answer: shuffled.correct_answer,
+            explanation_fa: ex.explanation_fa ?? null,
+            points: 10,
+            order_index: i,
+          };
+        })
       );
     }
 

@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { PlacementQuestion } from '@/types/db';
+import { shuffleQuestion } from './shuffle';
 
 export const PLACEMENT_BANK: PlacementQuestion[] = [
   // ---------------- A1 ----------------
@@ -80,7 +81,10 @@ export function pickNextQuestion(
       const pool = PLACEMENT_BANK.filter(
         (q) => q.level === order[idx] && !askedIds.includes(q.id)
       );
-      if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
+      if (pool.length) {
+        // Shuffle options so the answer is not predictable by position.
+        return shuffleQuestion(pool[Math.floor(Math.random() * pool.length)]);
+      }
     }
   }
   return null;

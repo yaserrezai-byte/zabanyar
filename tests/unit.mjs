@@ -39,6 +39,7 @@ const bank = await load('src/lib/ai/placement-bank.ts');
 const pron = await load('src/lib/ai/pronunciation-engine.ts');
 const game = await load('src/lib/gamification.ts');
 const grp  = await load('src/lib/group-chat.ts');
+const shuf = await load('src/lib/ai/shuffle.ts');
 
 // ------------------------------------------------------------
 console.log('1) Grammar rule engine');
@@ -731,10 +732,137 @@ console.log('\n17) Pronunciation buttons are wired everywhere');
   ok('فقط برای متن دارای حروف لاتین رندر می‌شود', speak.includes("/[a-zA-Z]/.test(text)"));
   ok('صدای انگلیسی را ترجیح می‌دهد', speak.includes('pickEnglishVoice'));
   ok('از انتخاب صدای فارسی جلوگیری می‌کند', speak.includes("startsWith('en')"));
+  ok('لهجه آمریکایی را تشخیص می‌دهد', speak.includes('isAmerican'));
+  ok('  en-US را هدف می‌گیرد', speak.includes("startsWith('en-us')"));
+  ok('  پیش‌فرض utterance روی en-US است', speak.includes("'en-US'"));
+  {
+    // Strip comments first: the source *mentions* en-GB only to explain
+    // what it avoids, and matching that text would be a false failure.
+    const code = speak
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('//'))
+      .join('\n');
+    ok('  صدای بریتانیایی را ترجیح نمی‌دهد',
+       !/en-gb/i.test(code) && !/google uk/i.test(code));
+  }
+  ok('  صداهای شناخته‌شده آمریکایی را می‌شناسد',
+     /google us english/i.test(speak) && /samantha/i.test(speak));
   ok('کلیک را از والد جدا می‌کند', speak.includes('stopPropagation'));
   ok('هنگام unmount صدا را قطع می‌کند', speak.includes('speechSynthesis.cancel()'));
   ok('برچسب دسترس‌پذیری فارسی دارد', speak.includes('شنیدن تلفظ'));
   ok('نبود پشتیبانی مرورگر را مدیریت می‌کند', speak.includes('if (!supported) return null'));
+}
+
+// ------------------------------------------------------------
+console.log('18) Answer-position fairness');
+{
+  const { shuffleOptions, shuffleQuestion, shuffleExercise } = shuf;
+  const { PLACEMENT_BANK, pickNextQuestion } = bank;
+
+  // --- the shuffler itself ---
+  {
+    const opts = ['a', 'b', 'c', 'd'];
+    let allOk = true;
+    for (let i = 0; i < 400; i++) {
+      const r = shuffleOptions(opts, 1);
+      if (r.options.length !== 4) { allOk = false; break; }
+      if (r.options[r.correctIndex] !== 'b') { allOk = false; break; }
+      if ([...r.options].sort().join('') !== 'abcd') { allOk = false; break; }
+    }
+    ok('shuffleOptions keeps the correct answer pointing at the same text', allOk);
+  }
+
+  ok('shuffleOptions handles a single option', shuffleOptions(['x'], 0).correctIndex === 0);
+  ok('shuffleOptions handles an out-of-range index',
+     shuffleOptions(['a', 'b'], 9).correctIndex === 9);
+
+  {
+    // Options with positional meaning must not move.
+    const opts = ['a', 'an', 'the', '—'];
+    const r = shuffleOptions(opts, 3);
+    ok('shuffleOptions leaves positional options ("—") in place',
+       r.options.join('|') === opts.join('|') && r.correctIndex === 3);
+  }
+
+  // --- the raw bank is biased (documents why the shuffle exists) ---
+  {
+    const counts = [0, 0, 0, 0, 0, 0];
+    for (const q of PLACEMENT_BANK) counts[q.correct_index]++;
+    const maxShare = Math.max(...counts) / PLACEMENT_BANK.length;
+    ok('raw bank is known to be positionally biased (shuffle is required)',
+       maxShare > 0.5, `${Math.round(maxShare * 100)}% at one index`);
+  }
+
+  // --- what the learner actually receives must be fair ---
+  {
+    const counts = [0, 0, 0, 0, 0, 0];
+    let served = 0;
+    for (let i = 0; i < 3000; i++) {
+      const q = pickNextQuestion([], []);
+      if (!q) continue;
+      counts[q.correct_index]++;
+      served++;
+    }
+    const four = PLACEMENT_BANK.filter((q) => q.options.length === 4).length;
+    const share = counts.map((c) => c / served);
+    const maxShare = Math.max(...share);
+    ok('served placement questions spread the answer across positions',
+       maxShare < 0.45, `max ${Math.round(maxShare * 100)}% (was 78% at B)`);
+    ok('  option D is reachable', counts[3] > 0, `${counts[3]} of ${served}`);
+    ok('  bank still has 4-option questions', four > 20, `${four}`);
+  }
+
+  // --- always-B no longer beats the test ---
+  {
+    let bWins = 0;
+    const runs = 1200;
+    for (let i = 0; i < runs; i++) {
+      const q = pickNextQuestion([], []);
+      if (q && q.correct_index === 1) bWins++;
+    }
+    ok('always answering B is no longer a winning strategy',
+       bWins / runs < 0.4, `${Math.round((bWins / runs) * 100)}% win rate`);
+  }
+
+  // --- shuffled questions stay internally consistent ---
+  {
+    let consistent = true;
+    for (const q of PLACEMENT_BANK) {
+      const original = q.options[q.correct_index];
+      for (let i = 0; i < 25; i++) {
+        const sq = shuffleQuestion(q);
+        if (sq.options[sq.correct_index] !== original) { consistent = false; break; }
+        if (sq.options.length !== q.options.length) { consistent = false; break; }
+      }
+      if (!consistent) break;
+    }
+    ok('every bank question survives shuffling with its answer intact', consistent);
+  }
+
+  // --- lesson exercises use the same protection ---
+  {
+    const ex = { options: ['have', 'had', 'has', 'having'], correct_answer: 1 };
+    let good = true;
+    for (let i = 0; i < 200; i++) {
+      const r = shuffleExercise(ex);
+      if (r.options[r.correct_answer] !== 'had') { good = false; break; }
+    }
+    ok('shuffleExercise keeps lesson answers correct', good);
+    ok('shuffleExercise tolerates a missing options list',
+       shuffleExercise({ options: null, correct_answer: 0 }).correct_answer === 0);
+  }
+
+  // --- the generate route must actually call it ---
+  {
+    const fs = await import('node:fs');
+    const pathMod = await import('node:path');
+    const R = (f) => fs.readFileSync(pathMod.join(root, f), 'utf8');
+    const route = R('src/app/api/lessons/generate/route.ts');
+    ok('lesson generation shuffles exercise options', route.includes('shuffleExercise'));
+    const bankSrc = R('src/lib/ai/placement-bank.ts');
+    ok('placement bank shuffles on serve', bankSrc.includes('shuffleQuestion'));
+  }
 }
 
 console.log(`\n${'='.repeat(50)}`);
