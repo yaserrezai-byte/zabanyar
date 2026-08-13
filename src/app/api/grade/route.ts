@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, gradeAnswer, recordMistakes } from '@/lib/ai/service';
+import { getActiveLanguage } from '@/lib/active-language';
 import { checkBadges } from '@/lib/gamification';
 import type { SkillKind } from '@/types/db';
 
@@ -25,7 +26,8 @@ export async function POST(req: Request) {
   catch { return badRequest('داده ارسالی نامعتبر است.'); }
 
   try {
-    const ctx = await buildLearnerContext(supabase, user.id);
+    const language = await getActiveLanguage(supabase, user.id);
+    const ctx = await buildLearnerContext(supabase, user.id, language);
     const result = await gradeAnswer(body.text, body.skill as SkillKind, ctx, body.question);
 
     const { data: submission } = await supabase
@@ -52,12 +54,13 @@ export async function POST(req: Request) {
       .single();
 
     await Promise.all([
-      recordMistakes(supabase, user.id, result.errors),
+      recordMistakes(supabase, user.id, result.errors, language),
       body.assignment_id
         ? supabase.from('assignments').update({ status: 'graded' }).eq('id', body.assignment_id).eq('user_id', user.id)
         : Promise.resolve(),
       supabase.from('learning_history').insert({
         user_id: user.id,
+        language,
         event_type: 'submission_graded',
         skill: body.skill,
         xp: Math.round(result.score / 5),

@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CefrLevel, Correction, SkillKind, VocabSeed } from '@/types/db';
+import type { LearningLanguage } from '@/lib/languages';
 import {
   AI_ENABLED,
   SPEECH_ENABLED,
@@ -38,14 +39,24 @@ import {
 // ------------------------------------------------------------
 export async function buildLearnerContext(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  language: LearningLanguage = 'en'
 ): Promise<LearnerContext & { weakestSkill?: SkillKind; streak?: number }> {
-  const [profileRes, mistakesRes, vocabRes, memoryRes, skillsRes] = await Promise.all([
+  // Every learner-data read is scoped to `language`, so an English
+  // weakness never leaks into a Spanish lesson (and vice versa).
+  const [profileRes, langRes, mistakesRes, vocabRes, memoryRes, skillsRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),
+    supabase
+      .from('user_languages')
+      .select('current_level, target_level, streak_days')
+      .eq('user_id', userId)
+      .eq('language', language)
+      .maybeSingle(),
     supabase
       .from('mistakes_memory')
       .select('error_tag, error_label_fa, occurrences, skill')
       .eq('user_id', userId)
+      .eq('language', language)
       .eq('resolved', false)
       .order('occurrences', { ascending: false })
       .limit(8),
@@ -53,6 +64,7 @@ export async function buildLearnerContext(
       .from('vocabulary_memory')
       .select('word, mastery')
       .eq('user_id', userId)
+      .eq('language', language)
       .lt('mastery', 0.5)
       .order('lapses', { ascending: false })
       .limit(20),
@@ -62,22 +74,29 @@ export async function buildLearnerContext(
       .eq('user_id', userId)
       .order('weight', { ascending: false })
       .limit(10),
-    supabase.from('skill_levels').select('skill, score').eq('user_id', userId),
+    supabase
+      .from('skill_levels')
+      .select('skill, score')
+      .eq('user_id', userId)
+      .eq('language', language),
   ]);
 
   const p = profileRes.data;
+  const lang = langRes.data;
   const skills = skillsRes.data ?? [];
   const weakest = skills.length
     ? [...skills].sort((a, b) => Number(a.score) - Number(b.score))[0]?.skill
     : undefined;
 
   return {
+    language,
     fullName: p?.full_name ?? null,
-    level: p?.current_level ?? null,
-    targetLevel: p?.target_level ?? null,
+    // Level and streak come from the per-language track, not the profile.
+    level: lang?.current_level ?? null,
+    targetLevel: lang?.target_level ?? null,
     interests: p?.interests ?? [],
     pace: p?.learning_pace ?? 1,
-    streak: p?.streak_days ?? 0,
+    streak: lang?.streak_days ?? 0,
     weakestSkill: (weakest as SkillKind) ?? 'grammar',
     weaknesses: (mistakesRes.data ?? []).map((m) => ({
       tag: m.error_tag,
@@ -95,7 +114,8 @@ export async function buildLearnerContext(
 export async function recordMistakes(
   supabase: SupabaseClient,
   userId: string,
-  errors: { error_tag?: string; note_fa?: string; wrong?: string; right?: string; skill?: SkillKind }[]
+  errors: { error_tag?: string; note_fa?: string; wrong?: string; right?: string; skill?: SkillKind }[],
+  language: LearningLanguage = 'en'
 ) {
   for (const e of errors) {
     if (!e.error_tag) continue;
@@ -104,6 +124,7 @@ export async function recordMistakes(
       .from('mistakes_memory')
       .select('id, occurrences')
       .eq('user_id', userId)
+      .eq('language', language)
       .eq('error_tag', e.error_tag)
       .maybeSingle();
 
@@ -123,6 +144,7 @@ export async function recordMistakes(
     } else {
       await supabase.from('mistakes_memory').insert({
         user_id: userId,
+        language,
         skill: e.skill ?? 'grammar',
         error_tag: e.error_tag,
         error_label_fa: ERROR_LABELS_FA[e.error_tag] ?? e.error_tag,
@@ -136,7 +158,31 @@ export async function recordMistakes(
   }
 }
 
+/** Spanish-specific error tags. Merged into ERROR_LABELS_FA below. */
+export const ERROR_LABELS_FA_ES: Record<string, string> = {
+  ser_estar: 'تفاوت ser و estar',
+  ser_conjugation: 'صرف فعل ser',
+  gender_agreement: 'تطابق جنسیت اسم و صفت',
+  plural_agreement: 'تطابق جمع',
+  present_conjugation: 'صرف زمان حال',
+  preterite: 'گذشته ساده (indefinido)',
+  imperfect_vs_preterite: 'تفاوت imperfecto و indefinido',
+  subjunctive_present: 'وجه التزامی حال',
+  subjunctive_past: 'وجه التزامی گذشته',
+  subjunctive_doubt: 'التزامی پس از شک و انکار',
+  subjunctive_concession: 'التزامی امتیازی',
+  por_para: 'تفاوت por و para',
+  gustar_structure: 'ساختار gustar',
+  se_accidental: 'ساختار se غیرعمدی',
+  llevar_gerund: 'ساختار llevar + gerundio',
+  accent_marks: 'نشانه‌های تشدید (tilde)',
+  c_pronunciation: 'تلفظ c و z',
+  advanced_conditional: 'شرطی پیشرفته',
+  nuance: 'درک ظرافت معنایی',
+};
+
 export const ERROR_LABELS_FA: Record<string, string> = {
+  ...ERROR_LABELS_FA_ES,
   past_simple: 'زمان گذشته ساده',
   present_simple: 'زمان حال ساده',
   present_perfect: 'زمان حال کامل',

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '@/types/db';
 import { LEVEL_FA } from '@/types/db';
+import { LANGUAGES, toLanguage, type LearningLanguage } from '@/lib/languages';
 
 type NavLink = { href: string; label: string; shortLabel?: string; icon: string };
 
@@ -35,7 +36,22 @@ const ROLE_FA: Record<string, string> = {
   admin: 'مدیر',
 };
 
-export default function AppNav({ profile }: { profile: Profile }) {
+export default function AppNav({
+  profile,
+  language,
+  level,
+  streak,
+}: {
+  profile: Profile;
+  language?: LearningLanguage;
+  /** Level for the ACTIVE language, not the profile mirror. */
+  level?: string | null;
+  streak?: number;
+}) {
+  const lang = LANGUAGES[toLanguage(language)];
+  // Prefer the per-language track; fall back to the profile mirror.
+  const activeLevel = level ?? profile.current_level ?? null;
+  const activeStreak = streak ?? profile.streak_days ?? 0;
   const pathname = usePathname();
   const [userOpen, setUserOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -108,6 +124,21 @@ export default function AppNav({ profile }: { profile: Profile }) {
               <span>زبان‌یار</span>
             </Link>
 
+            {/* active language — also the switcher */}
+            <Link
+              href="/languages"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:bg-primary-50"
+              style={{ borderColor: 'var(--border-strong)' }}
+              title="تغییر زبان"
+            >
+              <span aria-hidden="true">{lang.flag}</span>
+              <span className="font-medium">{lang.nameFa}</span>
+              <span aria-hidden="true" style={{ color: 'var(--muted)' }}>
+                ⇄
+              </span>
+              <span className="sr-only">تغییر زبان یادگیری</span>
+            </Link>
+
             {/* desktop nav — primary inline, the rest behind «بیشتر» */}
             <nav className="hidden items-center gap-1 lg:flex" aria-label="ناوبری اصلی">
               {PRIMARY.map((l) => (
@@ -167,19 +198,19 @@ export default function AppNav({ profile }: { profile: Profile }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {profile.current_level && (
+            {activeLevel && (
               <span className="badge hidden bg-primary-50 text-primary-800 sm:inline-flex">
-                <b className="num">{profile.current_level}</b>
-                {LEVEL_FA[profile.current_level]}
+                <b className="num">{activeLevel}</b>
+                {LEVEL_FA[activeLevel as keyof typeof LEVEL_FA] ?? ''}
               </span>
             )}
-            {profile.streak_days > 0 && (
+            {activeStreak > 0 && (
               <span
                 className="badge bg-accent-50 text-accent-800"
-                title={`${profile.streak_days} روز پیاپی`}
+                title={`${activeStreak} روز پیاپی`}
               >
                 <span aria-hidden="true">🔥</span>
-                <b className="num">{profile.streak_days}</b>
+                <b className="num">{activeStreak}</b>
                 <span className="sr-only">روز پیاپی</span>
               </span>
             )}
@@ -213,6 +244,13 @@ export default function AppNav({ profile }: { profile: Profile }) {
                         نقش: {ROLE_FA[profile.role] ?? profile.role}
                       </div>
                     </div>
+                    <Link
+                      href="/languages"
+                      role="menuitem"
+                      className="block rounded-lg px-3 py-2.5 hover:bg-primary-50"
+                    >
+                      {lang.flag} تغییر زبان یادگیری
+                    </Link>
                     <Link
                       href="/onboarding"
                       role="menuitem"

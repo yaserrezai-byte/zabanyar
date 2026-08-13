@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LANGUAGES, toLanguage, type LearningLanguage } from '@/lib/languages';
 import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { CefrLevel } from '@/types/db';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
@@ -83,11 +84,14 @@ export default function PronunciationPractice({
   sentence,
   level,
   onScored,
+  language = 'en',
 }: {
   sentence: TargetSentence;
   level: CefrLevel | null;
   onScored?: (score: number) => void;
+  language?: LearningLanguage;
 }) {
+  const locale = LANGUAGES[toLanguage(language)].speechLang;
   const [recording, setRecording] = useState(false);
   const [analysing, setAnalysing] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -188,7 +192,7 @@ export default function PronunciationPractice({
     if (Ctor) {
       try {
         const recog = new Ctor();
-        recog.lang = 'en-US';
+        recog.lang = locale;
         recog.continuous = true;
         recog.interimResults = true;
         recog.maxAlternatives = 1;
@@ -273,7 +277,7 @@ export default function PronunciationPractice({
     }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(sentence.text);
-    u.lang = 'en-US';
+    u.lang = locale;
     u.rate = 0.85;
     window.speechSynthesis.speak(u);
   }
@@ -292,7 +296,7 @@ export default function PronunciationPractice({
 
         <div className="flex items-start gap-2">
           <p className="ltr text-xl font-bold leading-9" dir="ltr">{sentence.text}</p>
-          <Speak text={sentence.text} size="md" />
+          <Speak text={sentence.text} language={language} size="md" />
         </div>
         <p className="mt-1.5 text-sm leading-7" style={{ color: 'var(--muted)' }}>
           {sentence.translation_fa}

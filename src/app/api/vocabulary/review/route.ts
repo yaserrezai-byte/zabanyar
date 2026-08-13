@@ -46,6 +46,8 @@ export async function POST(req: Request) {
       }).eq('id', word.id),
       supabase.from('learning_history').insert({
         user_id: user.id,
+        // the word itself knows which language it belongs to
+        language: word.language ?? 'en',
         event_type: 'vocab_reviewed',
         skill: 'vocabulary',
         xp: body.quality >= 3 ? 3 : 1,

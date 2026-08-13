@@ -1,5 +1,6 @@
 import { getAuth, unauthorized, serverError } from '@/lib/auth';
-import { pickNextQuestion, PLACEMENT_LENGTH } from '@/lib/ai/placement-bank';
+import { pickQuestion, PLACEMENT_LENGTH } from '@/lib/ai/banks';
+import { getActiveLanguage } from '@/lib/active-language';
 import type { PlacementQuestion } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -10,11 +11,14 @@ export async function POST() {
   const { supabase, user } = ctx;
 
   try {
-    // resume an in-progress test if one exists
+    const language = await getActiveLanguage(supabase, user.id);
+
+    // resume an in-progress test for THIS language only
     const { data: existing } = await supabase
       .from('placement_tests')
       .select('*')
       .eq('user_id', user.id)
+      .eq('language', language)
       .eq('status', 'in_progress')
       .order('started_at', { ascending: false })
       .maybeSingle();
@@ -29,18 +33,20 @@ export async function POST() {
           index: answers.length,
           total: PLACEMENT_LENGTH,
           question: sanitize(current),
+          language,
           resumed: true,
         });
       }
     }
 
-    const first = pickNextQuestion([], []);
+    const first = pickQuestion(language, [], []);
     if (!first) return serverError('بانک سؤال خالی است.');
 
     const { data: test, error } = await supabase
       .from('placement_tests')
       .insert({
         user_id: user.id,
+        language,
         status: 'in_progress',
         questions: [first],
         answers: [],
@@ -56,6 +62,7 @@ export async function POST() {
       index: 0,
       total: PLACEMENT_LENGTH,
       question: sanitize(first),
+      language,
       resumed: false,
     });
   } catch (e) {

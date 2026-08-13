@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LANGUAGES, toLanguage, type LearningLanguage } from '@/lib/languages';
 
 /* ============================================================
  * زبان‌یار | Speak — pronunciation for any English text
@@ -8,11 +9,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * Uses the browser's built-in Web Speech API: free, offline on most
  * devices, and no API key.
  *
- * Accent policy: American English (en-US) only. Learners should hear one
- * consistent accent — mixing US and UK voices across screens teaches
- * contradictory pronunciations (e.g. "schedule", "water", rhotic /r/).
- * A non-US English voice is used only as a last resort when the device
- * ships no en-US voice at all.
+ * Accent policy: one consistent accent per language.
+ *   English  -> en-US (American). Mixing US/UK voices across screens
+ *               teaches contradictory pronunciations.
+ *   Spanish  -> es-ES (Castilian), matching the placement bank, which
+ *               uses the /θ/ distinction ("ceceo").
+ * A different regional voice is used only when the device ships none
+ * for the requested locale.
  * ============================================================ */
 
 let cachedVoices: SpeechSynthesisVoice[] | null = null;
@@ -59,50 +62,63 @@ function tag(v: SpeechSynthesisVoice): string {
   return (v.lang ?? '').toLowerCase().replace('_', '-');
 }
 
-function isAmerican(v: SpeechSynthesisVoice): boolean {
-  return tag(v).startsWith('en-us');
+/** Does this voice match the exact locale we want (e.g. 'en-us')? */
+function matchesLocale(v: SpeechSynthesisVoice, locale: string): boolean {
+  return tag(v).startsWith(locale.toLowerCase());
 }
 
-/**
- * Pick the best American English voice available.
- *
- * Order: named high-quality en-US voices -> any en-US voice ->
- * generic 'en' -> any English voice (last resort).
- */
-function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
-  if (!voices.length) return null;
-
-  const english = voices.filter((v) => tag(v).startsWith('en'));
-  if (!english.length) return null;
-
-  const american = english.filter(isAmerican);
-
-  // Known-good US voices across Chrome / Safari / Edge / Android.
-  const preferred = [
+/** Preferred named voices per locale, best first. */
+const PREFERRED_VOICES: Record<string, RegExp[]> = {
+  'en-us': [
     /google us english/i,
     /samantha/i,
     /^alex$/i,
     /microsoft (aria|jenny|guy|davis|christopher|eric|michelle)/i,
     /microsoft (zira|david|mark)/i,
     /en-us-.*(neural|wavenet)/i,
-  ];
+  ],
+  'es-es': [
+    /google español(?!.*estados)/i,
+    /m[oó]nica/i,
+    /microsoft (elvira|alvaro|helena|laura|pablo)/i,
+    /es-es-.*(neural|wavenet)/i,
+  ],
+};
 
-  for (const pattern of preferred) {
-    const hit = american.find((v) => pattern.test(v.name));
+/**
+ * Pick the best voice for a locale.
+ *
+ * Order: named high-quality voices for the exact locale -> any voice
+ * for that locale (preferring offline) -> region-less base language ->
+ * any voice of that language.
+ */
+function pickVoiceFor(
+  voices: SpeechSynthesisVoice[],
+  locale: string
+): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+
+  const base = locale.split('-')[0].toLowerCase();
+  const sameLanguage = voices.filter((v) => tag(v).startsWith(base));
+  if (!sameLanguage.length) return null;
+
+  const exact = sameLanguage.filter((v) => matchesLocale(v, locale));
+
+  for (const pattern of PREFERRED_VOICES[locale.toLowerCase()] ?? []) {
+    const hit = exact.find((v) => pattern.test(v.name));
     if (hit) return hit;
   }
 
-  // Any en-US voice, preferring a local (offline, usually better) one.
-  if (american.length) {
-    return american.find((v) => v.localService) ?? american[0];
+  if (exact.length) {
+    return exact.find((v) => v.localService) ?? exact[0];
   }
 
-  // No en-US on this device: accept a region-less 'en' before a
-  // definitely-non-US accent such as en-GB or en-AU.
-  const neutral = english.find((v) => tag(v) === 'en');
+  // No exact regional voice: prefer a region-less tag over a
+  // definitely-different accent (en-GB for English, es-MX for Spanish).
+  const neutral = sameLanguage.find((v) => tag(v) === base);
   if (neutral) return neutral;
 
-  return english[0];
+  return sameLanguage[0];
 }
 
 export type SpeakSize = 'xs' | 'sm' | 'md';
@@ -125,6 +141,7 @@ export default function Speak({
   slow = false,
   label,
   className = '',
+  language = 'en',
 }: {
   text: string;
   size?: SpeakSize;
@@ -133,7 +150,10 @@ export default function Speak({
   /** Optional visible label instead of an icon-only button. */
   label?: string;
   className?: string;
+  /** Which language the text is in. Drives voice + locale. */
+  language?: LearningLanguage;
 }) {
+  const locale = LANGUAGES[toLanguage(language)].speechLang;
   const [speaking, setSpeaking] = useState(false);
   // Lazy initialiser: evaluated once on the client, so no effect and no
   // hydration mismatch (the server renders nothing for this component).
@@ -173,12 +193,11 @@ export default function Speak({
       if (!clean) return;
 
       const voices = await loadVoices();
-      const voice = pickEnglishVoice(voices);
+      const voice = pickVoiceFor(voices, locale);
 
       const u = new SpeechSynthesisUtterance(clean);
-      // Always request American English; only defer to the voice's own tag
-      // when that voice is itself en-US.
-      u.lang = voice && isAmerican(voice) ? voice.lang : 'en-US';
+      // Pin the requested locale unless the chosen voice already matches it.
+      u.lang = voice && matchesLocale(voice, locale) ? voice.lang : locale;
       if (voice) u.voice = voice;
       // A single word is clearer read a little slower.
       u.rate = slow ? 0.7 : clean.split(/\s+/).length === 1 ? 0.8 : 0.92;
@@ -198,12 +217,12 @@ export default function Speak({
       window.speechSynthesis.cancel(); // clear any queued utterance
       window.speechSynthesis.speak(u);
     },
-    [text, slow]
+    [text, slow, locale]
   );
 
   // Nothing to pronounce.
   if (!supported) return null;
-  if (!/[a-zA-Z]/.test(text)) return null;
+  if (!/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(text)) return null;
 
   const s = SIZES[size];
 
@@ -259,19 +278,21 @@ export function SpeakableText({
   size = 'sm',
   slow = false,
   as: Tag = 'span',
+  language = 'en',
 }: {
   text: string;
   className?: string;
   size?: SpeakSize;
   slow?: boolean;
   as?: 'span' | 'p' | 'div';
+  language?: LearningLanguage;
 }) {
   return (
     <span className="inline-flex items-start gap-1.5">
       <Tag className={`ltr ${className}`} dir="ltr">
         {text}
       </Tag>
-      <Speak text={text} size={size} slow={slow} />
+      <Speak text={text} size={size} slow={slow} language={language} />
     </span>
   );
 }

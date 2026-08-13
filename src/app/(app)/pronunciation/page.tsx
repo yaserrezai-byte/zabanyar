@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import PronunciationWorkshop from '@/components/PronunciationWorkshop';
-import { sentencesForLevel } from '@/lib/ai/pronunciation-engine';
+import { sentencesForLevelIn } from '@/lib/ai/banks';
+import { getLanguageContext } from '@/lib/active-language';
 import type { CefrLevel, PronunciationAttempt } from '@/types/db';
 
 export const metadata = { title: 'تمرین تلفظ | زبان‌یار' };
@@ -12,22 +13,23 @@ export default async function PronunciationPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: profile }, { data: attempts }] = await Promise.all([
-    supabase.from('profiles').select('current_level').eq('id', user.id).single(),
-    supabase
-      .from('pronunciation_attempts')
-      .select('id, target_text, accuracy_score, created_at, source, used_fallback')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(8),
-  ]);
+  const { language, track } = await getLanguageContext(supabase, user.id);
 
-  const level = (profile?.current_level ?? null) as CefrLevel | null;
+  const { data: attempts } = await supabase
+    .from('pronunciation_attempts')
+    .select('id, target_text, accuracy_score, created_at, source, used_fallback')
+    .eq('user_id', user.id)
+    .eq('language', language)
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  const level = (track.current_level ?? null) as CefrLevel | null;
 
   return (
     <PronunciationWorkshop
       level={level}
-      sentences={sentencesForLevel(level)}
+      language={language}
+      sentences={sentencesForLevelIn(language, level)}
       recent={(attempts ?? []) as Pick<
         PronunciationAttempt,
         'id' | 'target_text' | 'accuracy_score' | 'created_at' | 'source' | 'used_fallback'

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { LearningLanguage } from '@/lib/languages';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BridgeRing, Card, ErrorState, LevelBadge, Progress, Spinner, Stat } from '@/components/ui';
@@ -19,10 +20,12 @@ export default function VocabReview({
   words,
   total,
   mastered,
+  language = 'en',
 }: {
   words: VocabularyMemory[];
   total: number;
   mastered: number;
+  language?: LearningLanguage;
 }) {
   const router = useRouter();
   const [idx, setIdx] = useState(0);
@@ -143,7 +146,7 @@ export default function VocabReview({
 
         <div className="flex items-center justify-center gap-2">
           <h2 className="ltr text-3xl font-bold" dir="ltr">{current.word}</h2>
-          <Speak text={current.word} size="md" />
+          <Speak text={current.word} size="md" language={language} />
         </div>
         {current.phonetic && (
           <p className="ltr mt-1 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">
@@ -167,7 +170,7 @@ export default function VocabReview({
               {current.example_en && (
                 <div className="mt-3 flex items-center justify-center gap-1.5">
                   <p className="ltr text-sm" dir="ltr">{current.example_en}</p>
-                  <Speak text={current.example_en} />
+                  <Speak text={current.example_en} language={language} />
                 </div>
               )}
               {current.example_fa && (

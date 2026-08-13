@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LANGUAGES, toLanguage, type LearningLanguage } from '@/lib/languages';
 import { useRouter } from 'next/navigation';
 import { Alert, Card, Progress, Spinner } from '@/components/ui';
 import type { Assignment, SkillKind } from '@/types/db';
@@ -26,7 +27,14 @@ interface GradeResult {
   source: 'ai' | 'local';
 }
 
-export default function WritingWorkshop({ assignments }: { assignments: Assignment[] }) {
+export default function WritingWorkshop({
+  assignments,
+  language = 'en',
+}: {
+  assignments: Assignment[];
+  language?: LearningLanguage;
+}) {
+  const langCfg = LANGUAGES[toLanguage(language)];
   const router = useRouter();
   const [text, setText] = useState('');
   const [skill, setSkill] = useState<SkillKind>('writing');
@@ -113,7 +121,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
 
         <div className="mb-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-sm font-medium">متن انگلیسی شما</label>
+            <label className="text-sm font-medium">متن {langCfg.nameFa} شما</label>
             <span className="num text-xs" style={{ color: 'var(--muted)' }}>{words} کلمه</span>
           </div>
           <textarea
@@ -172,7 +180,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
               <div className="mb-1.5 text-sm font-bold">✅ متن اصلاح‌شده</div>
               <div className="flex items-start gap-1.5">
                 <p className="ltr leading-8" dir="ltr">{result.corrected_text}</p>
-                <Speak text={result.corrected_text} />
+                <Speak text={result.corrected_text} language={language} />
               </div>
             </div>
           )}
@@ -187,7 +195,7 @@ export default function WritingWorkshop({ assignments }: { assignments: Assignme
                       <span className="ltr inline-block line-through opacity-60" dir="ltr">{e.wrong}</span>
                       {' → '}
                       <span className="ltr inline-block font-bold" dir="ltr">{e.right}</span>
-                      <Speak text={e.right} size="xs" />
+                      <Speak text={e.right} size="xs" language={language} />
                     </div>
                     <div className="mt-1 text-xs leading-7 text-error-700">{e.note_fa}</div>
                   </div>

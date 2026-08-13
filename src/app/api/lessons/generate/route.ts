@@ -3,6 +3,7 @@ import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, generateLesson } from '@/lib/ai/service';
 import { templateForTag } from '@/lib/ai/local-engine';
 import { shuffleExercise } from '@/lib/ai/shuffle';
+import { getActiveLanguage } from '@/lib/active-language';
 import type { CefrLevel, SkillKind } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const ctx = await buildLearnerContext(supabase, user.id);
+    const language = await getActiveLanguage(supabase, user.id);
+    const ctx = await buildLearnerContext(supabase, user.id, language);
 
     const level: CefrLevel = body.level ?? ctx.level ?? 'A2';
     let skill: SkillKind = body.skill ?? ctx.weakestSkill ?? 'grammar';
@@ -99,6 +101,7 @@ export async function POST(req: Request) {
         user_id: user.id,
         title: generated.title,
         title_fa: generated.title_fa,
+        language,
         slug: slugify(generated.title),
         skill,
         level,
@@ -135,6 +138,7 @@ export async function POST(req: Request) {
           return {
             lesson_id: lesson.id,
             user_id: user.id,
+            language,
             kind: ['mcq', 'fill_blank'].includes(ex.kind) ? ex.kind : 'mcq',
             skill,
             level,
@@ -155,6 +159,7 @@ export async function POST(req: Request) {
       await supabase.from('vocabulary_memory').upsert(
         generated.vocabulary.slice(0, 15).map((w) => ({
           user_id: user.id,
+          language,
           word: w.word,
           meaning_fa: w.meaning_fa,
           part_of_speech: w.part_of_speech ?? null,
@@ -163,12 +168,13 @@ export async function POST(req: Request) {
           level,
           source: 'lesson',
         })),
-        { onConflict: 'user_id,word', ignoreDuplicates: true }
+        { onConflict: 'user_id,language,word', ignoreDuplicates: true }
       );
     }
 
     await supabase.from('learning_history').insert({
       user_id: user.id,
+      language,
       event_type: 'lesson_generated',
       skill,
       lesson_id: lesson.id,

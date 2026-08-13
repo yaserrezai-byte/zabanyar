@@ -40,6 +40,10 @@ const pron = await load('src/lib/ai/pronunciation-engine.ts');
 const game = await load('src/lib/gamification.ts');
 const grp  = await load('src/lib/group-chat.ts');
 const shuf = await load('src/lib/ai/shuffle.ts');
+const esBank = await load('src/lib/ai/placement-bank-es.ts');
+const esEng  = await load('src/lib/ai/local-engine-es.ts');
+const esPron = await load('src/lib/ai/pronunciation-es.ts');
+const langs  = await load('src/lib/languages.ts');
 
 // ------------------------------------------------------------
 console.log('1) Grammar rule engine');
@@ -729,12 +733,16 @@ console.log('\n17) Pronunciation buttons are wired everywhere');
 
   // The shared component itself must behave safely.
   const speak = R('src/components/Speak.tsx');
-  ok('فقط برای متن دارای حروف لاتین رندر می‌شود', speak.includes("/[a-zA-Z]/.test(text)"));
-  ok('صدای انگلیسی را ترجیح می‌دهد', speak.includes('pickEnglishVoice'));
-  ok('از انتخاب صدای فارسی جلوگیری می‌کند', speak.includes("startsWith('en')"));
-  ok('لهجه آمریکایی را تشخیص می‌دهد', speak.includes('isAmerican'));
-  ok('  en-US را هدف می‌گیرد', speak.includes("startsWith('en-us')"));
-  ok('  پیش‌فرض utterance روی en-US است', speak.includes("'en-US'"));
+  ok('فقط برای متن دارای حروف لاتین رندر می‌شود',
+     /\[a-zA-Z[^\]]*\]\/\.test\(text\)/.test(speak));
+  ok('  حروف تأکیددار اسپانیایی را هم می‌پذیرد',
+     speak.includes('ñ') && speak.includes('á'));
+  ok('صدای متناسب با زبان را انتخاب می‌کند', speak.includes('pickVoiceFor'));
+  ok('صدای زبان اشتباه را فیلتر می‌کند', speak.includes('startsWith(base)'));
+  ok('لوکال دقیق را تشخیص می‌دهد', speak.includes('matchesLocale'));
+  ok('  en-US را هدف می‌گیرد', speak.includes("'en-us'"));
+  ok('  es-ES را هدف می‌گیرد', speak.includes("'es-es'"));
+  ok('  لوکال از رجیستری زبان می‌آید', speak.includes('speechLang'));
   {
     // Strip comments first: the source *mentions* en-GB only to explain
     // what it avoids, and matching that text would be a false failure.
@@ -863,6 +871,99 @@ console.log('18) Answer-position fairness');
     const bankSrc = R('src/lib/ai/placement-bank.ts');
     ok('placement bank shuffles on serve', bankSrc.includes('shuffleQuestion'));
   }
+}
+
+// ------------------------------------------------------------
+console.log('19) Spanish track');
+{
+  const { PLACEMENT_BANK_ES, pickNextQuestionEs } = esBank;
+  const { detectErrorsEs, ES_LESSON_TEMPLATES, templateForTagEs } = esEng;
+  const { SENTENCE_BANK_ES, sentencesForLevelEs } = esPron;
+  const { LANGUAGES, toLanguage, LEARNING_LANGUAGES } = langs;
+
+  // --- registry ---
+  ok('two languages are registered', LEARNING_LANGUAGES.length === 2);
+  ok('English uses an American voice', LANGUAGES.en.speechLang === 'en-US');
+  ok('Spanish uses a Castilian voice', LANGUAGES.es.speechLang === 'es-ES');
+  ok('toLanguage rejects junk', toLanguage('fr') === 'en' && toLanguage(null) === 'en');
+  ok('toLanguage accepts es', toLanguage('es') === 'es');
+
+  // --- placement bank health ---
+  ok('Spanish bank has enough items', PLACEMENT_BANK_ES.length >= 35, `${PLACEMENT_BANK_ES.length}`);
+  ok('  covers every CEFR level',
+     ['A1','A2','B1','B2','C1','C2'].every((l) => PLACEMENT_BANK_ES.some((q) => q.level === l)));
+  ok('  every question has 4 options',
+     PLACEMENT_BANK_ES.every((q) => q.options.length === 4));
+  ok('  every correct_index is in range',
+     PLACEMENT_BANK_ES.every((q) => q.correct_index >= 0 && q.correct_index < q.options.length));
+  ok('  every question has a Persian explanation',
+     PLACEMENT_BANK_ES.every((q) => /[\u0600-\u06FF]/.test(q.explanation_fa ?? '')));
+  ok('  ids are unique',
+     new Set(PLACEMENT_BANK_ES.map((q) => q.id)).size === PLACEMENT_BANK_ES.length);
+  ok('  ids never collide with the English bank',
+     PLACEMENT_BANK_ES.every((q) => q.id.startsWith('es-')));
+
+  // Spanish-specific pedagogy must actually be present
+  const tags = new Set(PLACEMENT_BANK_ES.map((q) => q.error_tag));
+  ok('  tests ser vs estar', tags.has('ser_estar'));
+  ok('  tests grammatical gender', tags.has('gender_agreement'));
+  ok('  tests the subjunctive', tags.has('subjunctive_present'));
+  ok('  tests por vs para', tags.has('por_para'));
+  ok('  tests gustar inversion', tags.has('gustar_structure'));
+
+  // --- served answers must be positionally fair (same bug as English) ---
+  {
+    const counts = [0, 0, 0, 0];
+    let served = 0;
+    for (let i = 0; i < 3000; i++) {
+      const q = pickNextQuestionEs([], []);
+      if (!q) continue;
+      counts[q.correct_index]++;
+      served++;
+    }
+    const maxShare = Math.max(...counts.map((c) => c / served));
+    ok('Spanish answers are spread across positions',
+       maxShare < 0.45, `max ${Math.round(maxShare * 100)}%`);
+    ok('  option D is reachable in Spanish', counts[3] > 0);
+  }
+
+  // --- grammar detection ---
+  {
+    const r = detectErrorsEs('Yo soy cansado hoy.');
+    ok('detects "soy cansado" -> estar', r.some((e) => e.error_tag === 'ser_estar'));
+    ok('  suggests the right fix', r.some((e) => /estoy/i.test(e.right)));
+  }
+  {
+    const r = detectErrorsEs('El mesa es grande.');
+    ok('detects wrong gender article', r.some((e) => e.error_tag === 'gender_agreement'));
+    ok('  suggests "la mesa"', r.some((e) => /la mesa/i.test(e.right)));
+  }
+  {
+    const r = detectErrorsEs('Tengo un libro azul.');
+    ok('clean Spanish produces no false positives', r.length === 0, JSON.stringify(r));
+  }
+  ok('every Spanish note is in Persian',
+     detectErrorsEs('El mesa es grande. Yo soy cansado.')
+       .every((e) => /[\u0600-\u06FF]/.test(e.note_fa)));
+
+  // --- lesson templates ---
+  ok('has Spanish lesson templates', Object.keys(ES_LESSON_TEMPLATES).length >= 3);
+  ok('  ser_estar lesson exists', Boolean(ES_LESSON_TEMPLATES.ser_estar));
+  ok('  templates carry exercises',
+     Object.values(ES_LESSON_TEMPLATES).every((t) => t.exercises.length >= 5));
+  ok('  template exercise answers are in range',
+     Object.values(ES_LESSON_TEMPLATES).every((t) =>
+       t.exercises.every((e) => e.correct_answer >= 0 && e.correct_answer < e.options.length)));
+  ok('  templateForTagEs maps a related tag',
+     templateForTagEs('ser_conjugation') === 'ser_estar');
+
+  // --- pronunciation ---
+  ok('Spanish pronunciation bank exists', SENTENCE_BANK_ES.length >= 20);
+  ok('  every sentence has a Persian translation',
+     SENTENCE_BANK_ES.every((s) => /[\u0600-\u06FF]/.test(s.translation_fa)));
+  ok('  level filtering works', sentencesForLevelEs('A1').every((s) => s.level === 'A1'));
+  ok('  includes the rolled-rr drill',
+     SENTENCE_BANK_ES.some((s) => /rr/i.test(s.text)));
 }
 
 console.log(`\n${'='.repeat(50)}`);

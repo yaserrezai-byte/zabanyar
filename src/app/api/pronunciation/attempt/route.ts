@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { transcribeAndScore } from '@/lib/ai/service';
 import { checkBadges } from '@/lib/gamification';
+import { getActiveLanguage } from '@/lib/active-language';
 import type { CefrLevel } from '@/types/db';
 
 export const dynamic = 'force-dynamic';
@@ -109,6 +110,8 @@ export async function POST(req: Request) {
   }
 
   try {
+    const language = await getActiveLanguage(supabase, user.id);
+
     // ---------- transcribe + score (never throws) ----------
     const result = await transcribeAndScore(
       targetText,
@@ -153,6 +156,7 @@ export async function POST(req: Request) {
           confident: result.confident,
         },
         audio_path: audioPath,
+        language,
         level: level ?? null,
         duration_ms: durationMs ?? null,
         source: result.source,
@@ -167,6 +171,7 @@ export async function POST(req: Request) {
     if (result.confident) {
       await supabase.from('learning_history').insert({
         user_id: user.id,
+        language,
         event_type: 'pronunciation_attempt',
         skill: 'speaking',
         duration_sec: Math.round((durationMs ?? 0) / 1000) || 15,

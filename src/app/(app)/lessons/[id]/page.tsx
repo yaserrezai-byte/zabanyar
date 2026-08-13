@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { toLanguage } from '@/lib/languages';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, LevelBadge } from '@/components/ui';
@@ -47,7 +48,7 @@ export default async function LessonPage({
         <h1 className="text-2xl font-bold leading-9">{l.title_fa || l.title}</h1>
         <p className="ltr mt-1 flex items-center gap-1.5 text-sm" style={{ color: 'var(--muted)' }} dir="ltr">
           {l.title}
-          <Speak text={l.title} size="xs" />
+          <Speak language={toLanguage(l.language)} text={l.title} size="xs" />
         </p>
         {l.summary_fa && <p className="mt-3 leading-8">{l.summary_fa}</p>}
       </Card>
@@ -66,7 +67,7 @@ export default async function LessonPage({
                 <div key={j} className="rounded-xl p-3" style={{ background: 'var(--bg)' }}>
                   <div className="flex items-start gap-1.5">
                     <p className="ltr font-medium" dir="ltr">{ex.en}</p>
-                    <Speak text={ex.en} />
+                    <Speak language={toLanguage(l.language)} text={ex.en} />
                   </div>
                   <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{ex.fa}</p>
                 </div>
@@ -91,7 +92,7 @@ export default async function LessonPage({
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="flex items-center gap-1">
                     <span className="ltr font-bold" dir="ltr">{w.word}</span>
-                    <Speak text={w.word} size="xs" />
+                    <Speak language={toLanguage(l.language)} text={w.word} size="xs" />
                   </span>
                   {w.part_of_speech && (
                     <span className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">
@@ -105,7 +106,7 @@ export default async function LessonPage({
                     <span className="ltr text-xs" style={{ color: 'var(--muted)' }} dir="ltr">
                       {w.example_en}
                     </span>
-                    <Speak text={w.example_en} size="xs" />
+                    <Speak language={toLanguage(l.language)} text={w.example_en} size="xs" />
                   </div>
                 )}
               </div>
@@ -118,7 +119,11 @@ export default async function LessonPage({
       )}
 
       {exercises && exercises.length > 0 && (
-        <LessonExercises exercises={exercises as Exercise[]} lessonId={l.id} />
+        <LessonExercises
+          exercises={exercises as Exercise[]}
+          lessonId={l.id}
+          language={toLanguage(l.language)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, recordMistakes, tutorReply } from '@/lib/ai/service';
+import { getActiveLanguage } from '@/lib/active-language';
 import { checkBadges } from '@/lib/gamification';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,8 @@ export async function POST(req: Request) {
   catch { return badRequest('پیام نامعتبر است.'); }
 
   try {
+    const language = await getActiveLanguage(supabase, user.id);
+
     // resolve conversation
     let convId = body.conversation_id;
     if (!convId) {
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
         .from('conversations')
         .insert({
           user_id: user.id,
+          language,
           title: body.text.slice(0, 40) || 'گفت‌وگوی جدید',
           scenario: body.scenario ?? null,
         })
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const [ctx, historyRes] = await Promise.all([
-      buildLearnerContext(supabase, user.id),
+      buildLearnerContext(supabase, user.id, language),
       supabase
         .from('messages')
         .select('role, content')
@@ -81,7 +85,8 @@ export async function POST(req: Request) {
     await Promise.all([
       recordMistakes(
         supabase, user.id,
-        result.corrections.map((c) => ({ ...c, skill: 'speaking' as const }))
+        result.corrections.map((c) => ({ ...c, skill: 'speaking' as const })),
+        language
       ),
       supabase
         .from('conversations')
@@ -92,6 +97,7 @@ export async function POST(req: Request) {
         .eq('id', convId),
       supabase.from('learning_history').insert({
         user_id: user.id,
+        language,
         event_type: 'conversation_turn',
         skill: 'speaking',
         duration_sec: 60,
@@ -102,6 +108,7 @@ export async function POST(req: Request) {
         ? supabase.from('vocabulary_memory').upsert(
             result.new_words.map((w) => ({
               user_id: user.id,
+              language,
               word: w.word,
               meaning_fa: w.meaning_fa,
               example_en: w.example_en ?? null,
@@ -109,7 +116,7 @@ export async function POST(req: Request) {
               level: ctx.level ?? 'A2',
               source: 'conversation',
             })),
-            { onConflict: 'user_id,word', ignoreDuplicates: true }
+            { onConflict: 'user_id,language,word', ignoreDuplicates: true }
           )
         : Promise.resolve(),
     ]);

@@ -2,6 +2,8 @@
 // زبان‌یار | Database types
 // ============================================================
 
+import type { LearningLanguage } from '@/lib/languages';
+
 export type UserRole = 'student' | 'teacher' | 'admin';
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 export type SkillKind =
@@ -70,6 +72,7 @@ export const LEVEL_FA: Record<CefrLevel, string> = {
 };
 
 export interface Profile {
+  active_language: LearningLanguage;
   id: string;
   email: string | null;
   full_name: string | null;
@@ -93,6 +96,7 @@ export interface Profile {
 }
 
 export interface SkillLevel {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   skill: SkillKind;
@@ -125,6 +129,7 @@ export interface PlacementAnswer {
 }
 
 export interface PlacementTest {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   status: TestStatus;
@@ -148,6 +153,7 @@ export interface LessonSection {
 }
 
 export interface Lesson {
+  language: LearningLanguage;
   id: string;
   user_id: string | null;
   title: string;
@@ -191,6 +197,7 @@ export interface Exercise {
 }
 
 export interface Assignment {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   assigned_by: string | null;
@@ -227,6 +234,7 @@ export interface Submission {
 }
 
 export interface MistakeMemory {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   skill: SkillKind;
@@ -242,6 +250,7 @@ export interface MistakeMemory {
 }
 
 export interface VocabularyMemory {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   word: string;
@@ -262,6 +271,7 @@ export interface VocabularyMemory {
 }
 
 export interface Conversation {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   title: string;
@@ -294,6 +304,7 @@ export interface Correction {
 }
 
 export interface LearningHistory {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   event_type: string;
@@ -350,6 +361,7 @@ export interface PronunciationFeedback {
 }
 
 export interface PronunciationAttempt {
+  language: LearningLanguage;
   id: string;
   user_id: string;
   target_text: string;
@@ -375,4 +387,20 @@ export interface StudentRosterRow {
   last_active_on: string | null;
   placement_done: boolean;
   created_at: string;
+}
+
+/** One learner's progress in a single language (table: user_languages). */
+export interface UserLanguage {
+  id: string;
+  user_id: string;
+  language: LearningLanguage;
+  current_level: CefrLevel | null;
+  target_level: CefrLevel | null;
+  placement_done: boolean;
+  streak_days: number;
+  last_active_on: string | null;
+  goal_fa: string | null;
+  started_at: string;
+  created_at: string;
+  updated_at: string;
 }

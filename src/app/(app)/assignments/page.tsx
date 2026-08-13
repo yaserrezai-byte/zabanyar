@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { getActiveLanguage } from '@/lib/active-language';
+import { LANGUAGES } from '@/lib/languages';
 import { createClient } from '@/lib/supabase/server';
 import WritingWorkshop from '@/components/WritingWorkshop';
 import { Card, Empty, SectionTitle } from '@/components/ui';
@@ -14,8 +16,11 @@ export default async function AssignmentsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const language = await getActiveLanguage(supabase, user.id);
+  const langCfg = LANGUAGES[language];
+
   const [{ data: assignments }, { data: submissions }] = await Promise.all([
-    supabase.from('assignments').select('*').eq('user_id', user.id)
+    supabase.from('assignments').select('*').eq('user_id', user.id).eq('language', language)
       .order('created_at', { ascending: false }).limit(20),
     supabase.from('submissions').select('*').eq('user_id', user.id)
       .not('answer_text', 'is', null)
@@ -25,13 +30,13 @@ export default async function AssignmentsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 fade-in">
       <div>
-        <h1 className="t-h1">✍️ کارگاه نوشتن و تکالیف</h1>
+        <h1 className="t-h1">✍️ کارگاه نوشتن {langCfg.nameFa}</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
           هر متنی که بنویسید در چند ثانیه تصحیح می‌شود — با نمره، متن اصلاح‌شده و توضیح فارسی هر اشتباه.
         </p>
       </div>
 
-      <WritingWorkshop assignments={(assignments ?? []) as Assignment[]} />
+      <WritingWorkshop language={language} assignments={(assignments ?? []) as Assignment[]} />
 
       <Card>
         <SectionTitle title="تکالیف من" />

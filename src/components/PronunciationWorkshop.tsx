@@ -5,6 +5,7 @@ import { Card, Empty, LevelBadge, SectionTitle, Stat } from '@/components/ui';
 import PronunciationPractice from '@/components/PronunciationPractice';
 import type { TargetSentence } from '@/lib/ai/pronunciation-engine';
 import type { CefrLevel } from '@/types/db';
+import { LANGUAGES, type LearningLanguage } from '@/lib/languages';
 import Speak from '@/components/Speak';
 
 interface RecentAttempt {
@@ -20,10 +21,12 @@ export default function PronunciationWorkshop({
   level,
   sentences,
   recent,
+  language = 'en',
 }: {
   level: CefrLevel | null;
   sentences: TargetSentence[];
   recent: RecentAttempt[];
+  language?: LearningLanguage;
 }) {
   const [selected, setSelected] = useState<TargetSentence>(sentences[0]);
   const [session, setSession] = useState<number[]>([]);
@@ -57,9 +60,9 @@ export default function PronunciationWorkshop({
     <div className="space-y-6 fade-in">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="t-h1">🎤 تمرین تلفظ</h1>
+          <h1 className="t-h1">🎤 تمرین تلفظ {LANGUAGES[language].nameFa}</h1>
           <p className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
-            جمله را با صدای بلند بخوانید تا تلفظتان تحلیل شود
+            جمله را با صدای بلند بخوانید تا تلفظتان تحلیل شود · {LANGUAGES[language].accentFa}
             {level && <>· سطح شما: <LevelBadge level={level} /></>}
           </p>
         </div>
@@ -91,7 +94,7 @@ export default function PronunciationWorkshop({
                 >
                   <div className="flex items-start gap-1">
                     <div className="ltr text-sm font-medium leading-6" dir="ltr">{s.text}</div>
-                    <Speak text={s.text} size="xs" />
+                    <Speak text={s.text} size="xs" language={language} />
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>{s.focus_fa}</span>
@@ -118,6 +121,7 @@ export default function PronunciationWorkshop({
           <PronunciationPractice
             sentence={selected}
             level={level}
+            language={language}
             onScored={(s) => setSession((prev) => [...prev, s])}
           />
 

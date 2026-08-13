@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { getLanguageContext } from '@/lib/active-language';
+import { LANGUAGES } from '@/lib/languages';
 import { createClient } from '@/lib/supabase/server';
 import { Card, Empty, LevelBadge, Progress, SectionTitle, Stat } from '@/components/ui';
 import ActivityChart from '@/components/ActivityChart';
@@ -15,20 +17,23 @@ export default async function ProgressPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const { language, track } = await getLanguageContext(supabase, user.id);
+  const langCfg = LANGUAGES[language];
   const days = lastNDays(30);
   const since = days[0];
 
   const [{ data: profile }, { data: skills }, { data: history }, { data: mistakes }, { count: vocabTotal }, { count: vocabMastered }] =
     await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('skill_levels').select('*').eq('user_id', user.id),
+      supabase.from('skill_levels').select('*').eq('user_id', user.id).eq('language', language),
       supabase.from('learning_history').select('occurred_on, xp, duration_sec, accuracy, event_type')
-        .eq('user_id', user.id).gte('occurred_on', since).order('occurred_on'),
-      supabase.from('mistakes_memory').select('*').eq('user_id', user.id)
+        .eq('user_id', user.id).eq('language', language).gte('occurred_on', since).order('occurred_on'),
+      supabase.from('mistakes_memory').select('*').eq('user_id', user.id).eq('language', language)
         .order('occurrences', { ascending: false }).limit(10),
-      supabase.from('vocabulary_memory').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       supabase.from('vocabulary_memory').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).gte('mastery', 0.8),
+        .eq('user_id', user.id).eq('language', language),
+      supabase.from('vocabulary_memory').select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id).eq('language', language).gte('mastery', 0.8),
     ]);
 
   const p = profile as Profile;
@@ -71,10 +76,10 @@ export default async function ProgressPage() {
   return (
     <div className="space-y-6 fade-in">
       <div>
-        <h1 className="text-2xl font-bold">📈 گزارش پیشرفت</h1>
-        <p className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
+        <h1 className="t-h1">📈 گزارش پیشرفت {langCfg.nameFa}</h1>
+        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
           ۳۰ روز اخیر · سطح فعلی:
-          {p.current_level && <LevelBadge level={p.current_level} />}
+          {track.current_level && <LevelBadge level={track.current_level as never} />}
           {p.target_level && <>← هدف: <LevelBadge level={p.target_level} showFa={false} /></>}
         </p>
       </div>

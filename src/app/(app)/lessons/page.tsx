@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { getActiveLanguage } from '@/lib/active-language';
+import { LANGUAGES } from '@/lib/languages';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, Empty, LevelBadge } from '@/components/ui';
@@ -13,19 +15,23 @@ export default async function LessonsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const language = await getActiveLanguage(supabase, user.id);
+  const langCfg = LANGUAGES[language];
+
   const { data: lessons } = await supabase
     .from('lessons')
     .select('id, title, title_fa, summary_fa, skill, level, est_minutes, topic, created_at')
     .eq('user_id', user.id)
+    .eq('language', language)
     .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6 fade-in">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">📚 درس‌های من</h1>
+          <h1 className="t-h1">📚 درس‌های {langCfg.nameFa} من</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            هر درس بر اساس سطح و نقاط ضعف شما ساخته می‌شود.
+            هر درس بر اساس سطح و نقاط ضعف شما در {langCfg.nameFa} ساخته می‌شود.
           </p>
         </div>
         <GenerateLessonButton label="✨ ساخت درس جدید" />

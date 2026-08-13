@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AppNav from '@/components/AppNav';
+import { getLanguageContext } from '@/lib/active-language';
 import type { Profile } from '@/types/db';
 
 export default async function AppLayout({
@@ -40,12 +41,21 @@ export default async function AppLayout({
 
   if (!profile) redirect('/login');
 
+  // Resolve the active language once, here, so every page below renders
+  // the right track and the nav shows the right level/streak.
+  const { language, track } = await getLanguageContext(supabase, user.id);
+
   return (
     <div className="min-h-screen">
       <a href="#main" className="skip-link">
         رفتن به محتوای اصلی
       </a>
-      <AppNav profile={profile as Profile} />
+      <AppNav
+        profile={profile as Profile}
+        language={language}
+        level={track.current_level}
+        streak={track.streak_days}
+      />
       {/* pb-nav leaves room for the mobile bottom nav; on desktop it collapses */}
       <main id="main" className="pb-nav mx-auto max-w-7xl px-4 py-6">
         {children}

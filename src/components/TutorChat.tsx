@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { LANGUAGES, toLanguage, type LearningLanguage } from '@/lib/languages';
 import { createClient } from '@/lib/supabase/client';
 import { Card, ErrorState, SkeletonChat } from '@/components/ui';
 import type { Correction } from '@/types/db';
@@ -32,7 +33,14 @@ const SCENARIOS = [
   { key: 'You are an airport check-in agent.', label: '✈️ فرودگاه' },
 ];
 
-export default function TutorChat({ conversations }: { conversations: Conv[] }) {
+export default function TutorChat({
+  conversations,
+  language = 'en',
+}: {
+  conversations: Conv[];
+  language?: LearningLanguage;
+}) {
+  const langCfg = LANGUAGES[toLanguage(language)];
   const [convId, setConvId] = useState<string | undefined>();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -181,9 +189,9 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
       {/* chat */}
       <Card className="flex h-[calc(100vh-9rem)] flex-col p-0">
         <div className="border-b p-4" style={{ borderColor: 'var(--border)' }}>
-          <h1 className="font-bold">💬 مربی هوشمند زبان‌یار</h1>
+          <h1 className="font-bold">💬 مربی هوشمند {langCfg.nameFa}</h1>
           <p className="mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>
-            به انگلیسی بنویسید — اشتباهاتتان با توضیح فارسی تصحیح می‌شود.
+            به {langCfg.nameFa} بنویسید — اشتباهاتتان با توضیح فارسی تصحیح می‌شود.
           </p>
         </div>
 
@@ -201,13 +209,16 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
           {!messages.length && !loadingHistory && !historyError && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="text-4xl">👋</div>
-              <p className="mt-3 font-medium">سلام! بیایید انگلیسی صحبت کنیم.</p>
+              <p className="mt-3 font-medium">سلام! بیایید {langCfg.nameFa} صحبت کنیم.</p>
               <p className="mt-1 max-w-sm text-sm" style={{ color: 'var(--muted)' }}>
                 هر جمله‌ای که بنویسید بررسی می‌شود و اشتباهاتش با توضیح فارسی برایتان
                 شرح داده می‌شود.
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {['Hello! How are you?', 'I want to practice English.', 'Yesterday I go to park.'].map((s) => (
+                {(language === 'es'
+                  ? ['¡Hola! ¿Cómo estás?', 'Quiero practicar español.', 'Ayer yo voy al parque.']
+                  : ['Hello! How are you?', 'I want to practice English.', 'Yesterday I go to park.']
+                ).map((s) => (
                   <button
                     key={s}
                     onClick={() => setInput(s)}
@@ -249,7 +260,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                 >
                   <div className="flex items-start gap-1.5">
                     <p className="ltr leading-7" dir="ltr">{m.content}</p>
-                    <Speak text={m.content} />
+                    <Speak text={m.content} language={language} />
                   </div>
 
                   {m.translation_fa && (
@@ -277,7 +288,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
                         <span className="ltr inline-block line-through opacity-60" dir="ltr">{c.wrong}</span>
                         {' → '}
                         <span className="ltr inline-block font-bold" dir="ltr">{c.right}</span>
-                        <Speak text={c.right} size="xs" />
+                        <Speak text={c.right} size="xs" language={language} />
                         <div className="mt-0.5 text-xs leading-6">{c.note_fa}</div>
                       </div>
                     ))}
@@ -329,7 +340,7 @@ export default function TutorChat({ conversations }: { conversations: Conv[] }) 
             className="input ltr flex-1"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type in English…"
+            placeholder={language === 'es' ? 'Escribe en español…' : 'Type in English…'}
             dir="ltr"
             disabled={loading}
           />

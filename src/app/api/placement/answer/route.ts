@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
-import { pickNextQuestion, PLACEMENT_LENGTH } from '@/lib/ai/placement-bank';
+import { pickQuestion, PLACEMENT_LENGTH } from '@/lib/ai/banks';
+import { toLanguage } from '@/lib/languages';
 import { computePlacement, scoreToLevel } from '@/lib/ai/local-engine';
 import { recordMistakes } from '@/lib/ai/service';
 import { checkBadges } from '@/lib/gamification';
@@ -38,6 +39,10 @@ export async function POST(req: Request) {
     if (error || !test) return badRequest('آزمون یافت نشد.');
     if (test.status !== 'in_progress') return badRequest('این آزمون قبلاً پایان یافته است.');
 
+    // The language is fixed when the test starts, so a mid-test switch
+    // cannot corrupt the result.
+    const language = toLanguage(test.language);
+
     const questions = (test.questions ?? []) as PlacementQuestion[];
     const answers = (test.answers ?? []) as {
       question_id: string; chosen_index: number; correct: boolean;
@@ -69,6 +74,7 @@ export async function POST(req: Request) {
         const finalScore = skillScore ?? Math.max(0, score - 8);
         return {
           user_id: user.id,
+          language,
           skill: s,
           level: scoreToLevel(finalScore),
           score: Number(finalScore.toFixed(2)),
@@ -96,13 +102,27 @@ export async function POST(req: Request) {
             completed_at: new Date().toISOString(),
           })
           .eq('id', test.id),
-        supabase.from('skill_levels').upsert(skillRows, { onConflict: 'user_id,skill' }),
+        supabase.from('skill_levels').upsert(skillRows, { onConflict: 'user_id,language,skill' }),
+        supabase
+          .from('user_languages')
+          .upsert(
+            {
+              user_id: user.id,
+              language,
+              current_level: level,
+              placement_done: true,
+            },
+            { onConflict: 'user_id,language' }
+          ),
+        // Keep the profile mirror in sync for the *active* language so
+        // legacy reads (and the teacher panel) still see a level.
         supabase
           .from('profiles')
           .update({ current_level: level, placement_done: true })
           .eq('id', user.id),
         supabase.from('learning_history').insert({
           user_id: user.id,
+          language,
           event_type: 'placement_completed',
           xp: 100,
           accuracy: score,
@@ -113,7 +133,8 @@ export async function POST(req: Request) {
           user.id,
           answers
             .filter((a) => !a.correct && a.error_tag)
-            .map((a) => ({ error_tag: a.error_tag, skill: a.skill, note_fa: 'در آزمون تعیین سطح اشتباه شد.' }))
+            .map((a) => ({ error_tag: a.error_tag, skill: a.skill, note_fa: 'در آزمون تعیین سطح اشتباه شد.' })),
+          language
         ),
       ]);
 
@@ -130,7 +151,8 @@ export async function POST(req: Request) {
     }
 
     // ---------------- next question ----------------
-    const next = pickNextQuestion(
+    const next = pickQuestion(
+      language,
       answers.map((a) => ({ level: a.level, correct: a.correct })),
       questions.map((q) => q.id)
     );

@@ -14,6 +14,8 @@ import CoachPanel from '@/components/CoachPanel';
 import SkillRadar from '@/components/SkillRadar';
 import GenerateLessonButton from '@/components/GenerateLessonButton';
 import { SKILL_FA, SKILL_ICON, type Profile, type SkillKind } from '@/types/db';
+import { getLanguageContext } from '@/lib/active-language';
+import { LANGUAGES } from '@/lib/languages';
 import { daysAgo, nowIso, today } from '@/utils/dates';
 
 export const metadata = { title: 'داشبورد | زبان‌یار' };
@@ -24,34 +26,40 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // Everything on this page is scoped to the active language.
+  const { language, track } = await getLanguageContext(supabase, user.id);
+  const langCfg = LANGUAGES[language];
+
   const [profileRes, skillsRes, lessonsRes, dueRes, historyRes, mistakesRes, assignRes] =
     await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('skill_levels').select('*').eq('user_id', user.id),
+      supabase.from('skill_levels').select('*').eq('user_id', user.id).eq('language', language),
       supabase.from('lessons').select('id, title_fa, title, skill, level, est_minutes, created_at')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
+        .eq('user_id', user.id).eq('language', language).order('created_at', { ascending: false }).limit(4),
       supabase.from('vocabulary_memory').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).lte('next_review_at', nowIso()),
+        .eq('user_id', user.id).eq('language', language).lte('next_review_at', nowIso()),
       supabase.from('learning_history').select('xp, duration_sec, occurred_on')
         .eq('user_id', user.id)
+        .eq('language', language)
         .gte('occurred_on', daysAgo(7)),
       supabase.from('mistakes_memory').select('error_tag, error_label_fa, occurrences, skill')
-        .eq('user_id', user.id).eq('resolved', false)
+        .eq('user_id', user.id).eq('language', language).eq('resolved', false)
         .order('occurrences', { ascending: false }).limit(5),
       supabase.from('assignments').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).eq('status', 'assigned'),
+        .eq('user_id', user.id).eq('language', language).eq('status', 'assigned'),
     ]);
 
   const profile = profileRes.data as Profile;
 
-  if (!profile.placement_done) {
+  if (!track.placement_done) {
     return (
       <div className="mx-auto max-w-2xl py-8">
         <Empty
           icon="🎯"
-          title="بیایید با آزمون تعیین سطح شروع کنیم"
-          description="در حدود ۵ دقیقه و با ۱۴ سؤال تطبیقی، سطح واقعی شما در شش مهارت مشخص می‌شود. بعد از آن، برنامه یادگیری اختصاصی شما ساخته می‌شود."
+          title={`بیایید ${langCfg.nameFa} را با آزمون تعیین سطح شروع کنیم`}
+          description={`در حدود ۵ دقیقه و با ۱۴ سؤال تطبیقی، سطح واقعی شما در ${langCfg.nameFa} مشخص می‌شود. بعد از آن، برنامه یادگیری اختصاصی شما ساخته می‌شود.`}
           action={{ label: 'شروع آزمون تعیین سطح', href: '/placement' }}
+          secondaryAction={{ label: 'تغییر زبان', href: '/languages' }}
         />
       </div>
     );
@@ -70,6 +78,9 @@ export default async function DashboardPage() {
       .reduce((s, h) => s + (h.duration_sec ?? 0), 0) / 60
   );
 
+  const activeLevel = (track.current_level ?? profile.current_level) as
+    | Parameters<typeof LevelBadge>[0]['level']
+    | null;
   const goal = profile.daily_goal_min || 15;
   const goalDone = todayMin >= goal;
   const remaining = Math.max(0, goal - todayMin);
@@ -98,9 +109,10 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="t-h1">سلام {firstName} 👋</h1>
-          <p className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
-            سطح فعلی شما:
-            {profile.current_level && <LevelBadge level={profile.current_level} />}
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
+            <span aria-hidden="true">{langCfg.flag}</span>
+            {langCfg.nameFa} · سطح فعلی شما:
+            {activeLevel && <LevelBadge level={activeLevel} />}
           </p>
         </div>
         <GenerateLessonButton label="✨ ساخت درس جدید" />
@@ -140,10 +152,10 @@ export default async function DashboardPage() {
               >
                 {nextTask.cta}
               </Link>
-              {profile.streak_days > 0 && (
+              {track.streak_days > 0 && (
                 <span className="badge bg-white/15 text-white">
                   <span aria-hidden="true">🔥</span>
-                  <b className="num">{profile.streak_days}</b> روز پیاپی
+                  <b className="num">{track.streak_days}</b> روز پیاپی
                 </span>
               )}
             </div>
@@ -171,7 +183,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="امتیاز هفته" value={totalXp} icon="⭐" hint="مجموع XP ۷ روز اخیر" />
         <Stat label="دقیقه این هفته" value={totalMin} icon="⏱️" />
-        <Stat label="روزهای پیاپی" value={profile.streak_days} icon="🔥" />
+        <Stat label="روزهای پیاپی" value={track.streak_days} icon="🔥" />
         <Stat label="لغت آماده مرور" value={dueCount} icon="🔁" />
       </div>
 

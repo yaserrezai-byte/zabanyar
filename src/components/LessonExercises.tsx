@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { LearningLanguage } from '@/lib/languages';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Alert, BridgeRing, Card, ErrorState } from '@/components/ui';
@@ -10,9 +11,11 @@ import Speak from '@/components/Speak';
 export default function LessonExercises({
   exercises,
   lessonId,
+  language = 'en',
 }: {
   exercises: Exercise[];
   lessonId: string;
+  language?: LearningLanguage;
 }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [checked, setChecked] = useState(false);
@@ -87,7 +90,7 @@ export default function LessonExercises({
                   {idx + 1}.
                 </span>
                 <span className="ltr inline font-medium" dir="ltr">{ex.prompt}</span>
-                <Speak text={ex.prompt} size="xs" className="ms-1" />
+                <Speak text={ex.prompt} size="xs" className="ms-1" language={language} />
                 {ex.prompt_fa && (
                   <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{ex.prompt_fa}</p>
                 )}
