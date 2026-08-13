@@ -304,7 +304,7 @@ export default function GroupChat({
         <div className="border-b p-4" style={{ borderColor: 'var(--border)' }}>
           <h1 className="font-bold">{scenario.icon} گفت‌وگوی گروهی — {scenario.topic_fa}</h1>
           <p className="mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>
-            به انگلیسی بنویسید. راهنما هر چند پیام یک‌بار کمک می‌کند.
+            به زبان مقصد بنویسید. راهنما هر چند پیام یک‌بار کمک می‌کند.
           </p>
         </div>
 

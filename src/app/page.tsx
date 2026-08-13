@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LANGUAGES, LEARNING_LANGUAGES } from '@/lib/languages';
 
 const FEATURES = [
   {
@@ -14,7 +15,12 @@ const FEATURES = [
   {
     icon: '🔍',
     title: 'هوش تحلیل خطا',
-    body: 'اگر همیشه در زمان گذشته اشتباه می‌کنید، سیستم این الگو را کشف و یک درس اختصاصی برای رفعش تولید می‌کند.',
+    body: 'اگر همیشه در زمان گذشته یا در ser/estar اشتباه می‌کنید، سیستم این الگو را کشف و یک درس اختصاصی برای رفعش تولید می‌کند.',
+  },
+  {
+    icon: '🌍',
+    title: 'دو زبان، دو مسیر جدا',
+    body: 'انگلیسی و اسپانیایی هرکدام سطح، لغات و پیشرفت مستقل خودشان را دارند. هر وقت خواستید بین دو مسیر جابه‌جا شوید.',
   },
   {
     icon: '📚',
@@ -35,8 +41,8 @@ const FEATURES = [
 
 const STEPS = [
   { n: '۱', title: 'ثبت‌نام کنید', body: 'در کمتر از یک دقیقه با ایمیل حساب بسازید.' },
-  { n: '۲', title: 'آزمون تعیین سطح', body: 'سطح دقیق شما در شش مهارت سنجیده می‌شود.' },
-  { n: '۳', title: 'برنامه شخصی', body: 'مسیر یادگیری اختصاصی شما ساخته می‌شود.' },
+  { n: '۲', title: 'زبان را انتخاب کنید', body: 'انگلیسی یا اسپانیایی — یا هر دو، با مسیر جدا.' },
+  { n: '۳', title: 'آزمون تعیین سطح', body: 'سطح دقیق شما در شش مهارت سنجیده می‌شود.' },
   { n: '۴', title: 'هر روز پیشرفت', body: 'درس، تمرین، مکالمه و مرور — همه در یک جا.' },
 ];
 
@@ -63,12 +69,39 @@ export default function HomePage() {
           ✨ ساخته‌شده برای فارسی‌زبانان
         </span>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight sm:text-5xl">
-          انگلیسی را با مربی هوشمندی یاد بگیرید که{' '}
+          انگلیسی و اسپانیایی را با مربی هوشمندی یاد بگیرید که{' '}
           <span style={{ color: 'var(--color-primary-600)' }}>شما را می‌شناسد</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base leading-8 sm:text-lg" style={{ color: 'var(--muted)' }}>
           زبان‌یار سطح شما را می‌سنجد، اشتباهات تکرارشونده‌تان را کشف می‌کند و برای هر ضعف،
           یک درس اختصاصی می‌سازد. تمام توضیحات به فارسی روان.
+        </p>
+
+        {/* the two tracks */}
+        <div className="mx-auto mt-8 flex max-w-xl flex-wrap justify-center gap-3">
+          {LEARNING_LANGUAGES.map((code) => {
+            const l = LANGUAGES[code];
+            return (
+              <div
+                key={code}
+                className="card flex min-w-[13rem] flex-1 items-center gap-3 p-4 text-start"
+              >
+                <span className="text-3xl" aria-hidden="true">{l.flag}</span>
+                <div className="min-w-0">
+                  <div className="font-bold">{l.nameFa}</div>
+                  <div className="ltr text-xs" dir="ltr" style={{ color: 'var(--muted)' }}>
+                    {l.nameNative}
+                  </div>
+                  <div className="mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>
+                    {l.accentFa}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>
+          هر زبان مسیر، سطح و پیشرفت مستقل خودش را دارد — می‌توانید هر دو را با هم پیش ببرید.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/signup" className="btn btn-primary px-7 py-3 text-base">
@@ -137,7 +170,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t py-8 text-center text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-        <p>🎓 زبان‌یار — پلتفرم آموزش هوشمند زبان انگلیسی</p>
+        <p>🎓 زبان‌یار — پلتفرم آموزش هوشمند زبان انگلیسی و اسپانیایی</p>
         <p className="mt-2 text-xs">ساخته‌شده با Next.js، Supabase و Vercel</p>
       </footer>
     </main>

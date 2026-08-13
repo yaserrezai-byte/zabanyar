@@ -61,6 +61,57 @@ export function phoneticKey(word: string): string {
   return w;
 }
 
+/**
+ * Phonetic key for Spanish. Spanish spelling is far more regular than
+ * English, so the mapping is mostly about the letters that sound alike
+ * and the ones a Persian speaker tends to merge.
+ */
+export function phoneticKeyEs(word: string): string {
+  let w = word.toLowerCase().replace(/[^a-záéíóúüñ]/g, '');
+  if (!w) return '';
+
+  // strip accents — they mark stress, not a different consonant
+  w = w
+    .replace(/[á]/g, 'a').replace(/[é]/g, 'e').replace(/[í]/g, 'i')
+    .replace(/[ó]/g, 'o').replace(/[úü]/g, 'u');
+
+  // 'h' is always silent
+  w = w.replace(/h/g, '');
+
+  // digraphs first
+  w = w
+    .replace(/ch/g, 'C')
+    .replace(/ll/g, 'y')     // yeísmo: ll and y merged in modern Spanish
+    .replace(/rr/g, 'R')     // trill kept distinct from the tap
+    .replace(/qu/g, 'k')
+    .replace(/gu([ei])/g, 'g$1');
+
+  // c/z -> /θ/ before e,i (Castilian); c -> /k/ elsewhere
+  w = w.replace(/c([ei])/g, 'T$1').replace(/z/g, 'T').replace(/c/g, 'k');
+
+  // g before e,i sounds like j (/x/)
+  w = w.replace(/g([ei])/g, 'j$1');
+
+  // b and v are the same sound in Spanish
+  w = w.replace(/v/g, 'b');
+
+  // ñ is a single palatal sound
+  w = w.replace(/ñ/g, 'N');
+
+  // vowels carry little weight for intelligibility
+  w = w.replace(/[aeiou]+/g, 'a');
+
+  // squash doubles
+  w = w.replace(/(.)\1+/g, '$1');
+
+  return w;
+}
+
+/** Phonetic key for the given language. */
+export function keyFor(word: string, language: 'en' | 'es' = 'en'): string {
+  return language === 'es' ? phoneticKeyEs(word) : phoneticKey(word);
+}
+
 /** Levenshtein distance between two strings. */
 export function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
@@ -91,7 +142,9 @@ export function similarity(a: string, b: string): number {
 export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9'\s-]/g, ' ')
+    // Keep Spanish letters: stripping them turned "español" into "espaol"
+    // and every accented word scored as mispronounced.
+    .replace(/[^a-z0-9áéíóúüñ'\s-]/g, ' ')
     .split(/\s+/)
     .filter(Boolean);
 }
@@ -117,8 +170,22 @@ const HINTS: Hint[] = [
   { test: /tion\b/i, note_fa: 'پایانه «tion» مثل «شِن» تلفظ می‌شود.' },
 ];
 
-function hintFor(word: string): string | undefined {
-  return HINTS.find((h) => h.test.test(word))?.note_fa;
+/** Sounds that trip up a Persian speaker in Castilian Spanish. */
+const HINTS_ES: Hint[] = [
+  { test: /rr/i, note_fa: '«rr» باید غلتان و کشیده باشد؛ نوک زبان چند بار بلرزد — با «ر» تکی فارسی فرق دارد.' },
+  { test: /^r/i, note_fa: '«r» در ابتدای کلمه هم غلتان تلفظ می‌شود، مثل «rr».' },
+  { test: /j|g[ei]/i, note_fa: 'صدای «j» و «g» پیش از e/i مثل «خ» فارسی است، نه «ج».' },
+  { test: /z|c[ei]/i, note_fa: 'در اسپانیایی اروپا «z» و «c» پیش از e/i مثل th انگلیسی در think تلفظ می‌شود، نه «س».' },
+  { test: /ñ/i, note_fa: '«ñ» یک صدای واحد است («نی»)، نه دو صدای جدا.' },
+  { test: /ll|y/i, note_fa: '«ll» در اسپانیایی امروز تقریباً مثل «ی» تلفظ می‌شود.' },
+  { test: /^h/i, note_fa: 'حرف «h» همیشه بی‌صداست: hola خوانده می‌شود «اولا».' },
+  { test: /v/i, note_fa: '«v» و «b» یک صدا دارند؛ «v» را مثل «و» فارسی تلفظ نکنید.' },
+  { test: /[aeiou]{2}/i, note_fa: 'مصوت‌های اسپانیایی کوتاه و خالص‌اند؛ آن‌ها را کشیده نکنید.' },
+];
+
+function hintFor(word: string, language: 'en' | 'es' = 'en'): string | undefined {
+  const set = language === 'es' ? HINTS_ES : HINTS;
+  return set.find((h) => h.test.test(word))?.note_fa;
 }
 
 // ------------------------------------------------------------
@@ -166,7 +233,8 @@ export { STATUS_FA };
  */
 export function scoreTranscript(
   targetText: string,
-  transcript: string
+  transcript: string,
+  language: 'en' | 'es' = 'en'
 ): PronunciationScore {
   const target = tokenize(targetText);
   const heard = tokenize(transcript);
@@ -185,7 +253,7 @@ export function scoreTranscript(
     };
   }
 
-  const words = alignWords(target, heard);
+  const words = alignWords(target, heard, language);
 
   const targetWords = words.filter((w) => w.status !== 'extra');
   const attempted = targetWords.filter((w) => w.status !== 'missing').length;
@@ -276,9 +344,13 @@ function verdict(score: number, total: number, correct: number): string {
 // Word alignment (LCS on phonetic keys, order-preserving)
 // ------------------------------------------------------------
 
-function alignWords(target: string[], heard: string[]): WordScore[] {
-  const tKeys = target.map(phoneticKey);
-  const hKeys = heard.map(phoneticKey);
+function alignWords(
+  target: string[],
+  heard: string[],
+  language: 'en' | 'es' = 'en'
+): WordScore[] {
+  const tKeys = target.map((w) => keyFor(w, language));
+  const hKeys = heard.map((w) => keyFor(w, language));
 
   // LCS table over "phonetically similar enough" pairs
   const n = target.length;
@@ -303,36 +375,40 @@ function alignWords(target: string[], heard: string[]): WordScore[] {
 
   while (i < n && j < m) {
     if (near(i, j)) {
-      out.push(scoreWord(target[i], heard[j]));
+      out.push(scoreWord(target[i], heard[j], language));
       i++;
       j++;
     } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out.push(missing(target[i]));
+      out.push(missing(target[i], language));
       i++;
     } else {
       out.push({ target: '', heard: heard[j], score: 0, status: 'extra' });
       j++;
     }
   }
-  while (i < n) out.push(missing(target[i++]));
+  while (i < n) out.push(missing(target[i++], language));
   while (j < m) out.push({ target: '', heard: heard[j++], score: 0, status: 'extra' });
 
   return out;
 }
 
-function missing(word: string): WordScore {
+function missing(word: string, language: 'en' | 'es' = 'en'): WordScore {
   return {
     target: word,
     heard: null,
     score: 0,
     status: 'missing',
-    hint_fa: hintFor(word),
+    hint_fa: hintFor(word, language),
   };
 }
 
-function scoreWord(target: string, heard: string): WordScore {
+function scoreWord(
+  target: string,
+  heard: string,
+  language: 'en' | 'es' = 'en'
+): WordScore {
   const exact = target.toLowerCase() === heard.toLowerCase();
-  const phon = similarity(phoneticKey(target), phoneticKey(heard));
+  const phon = similarity(keyFor(target, language), keyFor(heard, language));
   const raw = similarity(target.toLowerCase(), heard.toLowerCase());
 
   // phonetic match dominates; raw spelling nudges it
@@ -348,7 +424,7 @@ function scoreWord(target: string, heard: string): WordScore {
     heard,
     score: exact ? 100 : score,
     status,
-    hint_fa: status === 'correct' ? undefined : hintFor(target),
+    hint_fa: status === 'correct' ? undefined : hintFor(target, language),
   };
 }
 
@@ -364,7 +440,8 @@ function scoreWord(target: string, heard: string): WordScore {
  */
 export function scoreFromDuration(
   targetText: string,
-  durationMs: number
+  durationMs: number,
+  language: 'en' | 'es' = 'en'
 ): PronunciationScore {
   const words = tokenize(targetText);
   // ~380 ms per word is a comfortable speaking pace
@@ -388,7 +465,7 @@ export function scoreFromDuration(
       heard: null,
       score: plausibility,
       status: 'close' as const,
-      hint_fa: hintFor(w),
+      hint_fa: hintFor(w, language),
     })),
     feedback_fa: tooShort
       ? 'ضبط شما خیلی کوتاه بود. مطمئن شوید کل جمله را خوانده‌اید و میکروفون فعال است.'
@@ -398,7 +475,7 @@ export function scoreFromDuration(
     strengths_fa: tooShort ? [] : ['طول ضبط با جمله هدف تناسب دارد.'],
     improvements_fa: [
       'برای دریافت امتیاز دقیق، از مرورگر کروم استفاده کنید یا کلید سرویس گفتار را در تنظیمات اضافه کنید.',
-      ...(hintFor(targetText) ? [hintFor(targetText)!] : []),
+      ...(hintFor(targetText, language) ? [hintFor(targetText, language)!] : []),
     ],
     problem_words: [],
     coverage: 0,

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getAuth, unauthorized, badRequest, serverError } from '@/lib/auth';
 import { buildLearnerContext, generateLesson } from '@/lib/ai/service';
 import { templateForTag } from '@/lib/ai/local-engine';
+import { templateForTagEs } from '@/lib/ai/local-engine-es';
 import { shuffleExercise } from '@/lib/ai/shuffle';
 import { getActiveLanguage } from '@/lib/active-language';
 import type { CefrLevel, SkillKind } from '@/types/db';
@@ -38,12 +39,17 @@ export async function POST(req: Request) {
     let skill: SkillKind = body.skill ?? ctx.weakestSkill ?? 'grammar';
     let topic = body.topic;
 
-    // What the learner already has. Previously this was never consulted,
-    // so every generation could return the same lesson again.
+    // Resolve error tags to lesson templates in the learner's language.
+    const resolveTemplate = (tag: string) =>
+      language === 'es' ? templateForTagEs(tag) : templateForTag(tag);
+
+    // What the learner already has, in THIS language. Previously this was
+    // never consulted, so every generation could return the same lesson.
     const { data: existing } = await supabase
       .from('lessons')
       .select('topic')
       .eq('user_id', user.id)
+      .eq('language', language)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -54,7 +60,7 @@ export async function POST(req: Request) {
     // Map each stored topic onto the template it actually resolves to,
     // so "nuance" and "tone" are recognised as the same lesson.
     const usedTemplates = Array.from(
-      new Set(recentTopics.map((t) => templateForTag(t)).filter((t): t is string => Boolean(t)))
+      new Set(recentTopics.map((t) => resolveTemplate(t)).filter((t): t is string => Boolean(t)))
     );
 
     // AI Error Intelligence: build the lesson around a weakness — but
@@ -62,7 +68,7 @@ export async function POST(req: Request) {
     // one, which is what made the same lesson come back every time.
     if (!topic && (body.from_weakness ?? true) && ctx.weaknesses?.length) {
       const unaddressed = ctx.weaknesses.filter((w) => {
-        const tpl = templateForTag(w.tag);
+        const tpl = resolveTemplate(w.tag);
         return tpl && !usedTemplates.includes(tpl);
       });
 
@@ -76,6 +82,7 @@ export async function POST(req: Request) {
         .from('mistakes_memory')
         .select('skill')
         .eq('user_id', user.id)
+        .eq('language', language)
         .eq('error_tag', chosen.tag)
         .maybeSingle();
       if (mistake?.skill) skill = mistake.skill as SkillKind;
@@ -93,7 +100,7 @@ export async function POST(req: Request) {
 
     // Record the template that was actually produced, not the raw error
     // tag, so future de-duplication compares like with like.
-    topic = generated.topic ?? topic ?? 'daily_conversation';
+    topic = generated.topic ?? topic ?? (language === 'es' ? 'daily_conversation_es' : 'daily_conversation');
 
     const { data: lesson, error } = await supabase
       .from('lessons')

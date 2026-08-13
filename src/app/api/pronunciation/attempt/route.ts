@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     const result = await transcribeAndScore(
       targetText,
       audioBuf ? { data: audioBuf, mimeType } : null,
-      { browserTranscript, durationMs }
+      { browserTranscript, durationMs, language }
     );
 
     // ---------- persist audio in the private `speech` bucket ----------

@@ -966,6 +966,123 @@ console.log('19) Spanish track');
      SENTENCE_BANK_ES.some((s) => /rr/i.test(s.text)));
 }
 
+// ------------------------------------------------------------
+console.log('20) Spanish is actually WIRED IN (not dead code)');
+{
+  const fs = await import('node:fs');
+  const pathMod = await import('node:path');
+  const R = (f) => fs.readFileSync(pathMod.join(root, f), 'utf8');
+
+  const { localLessonEs, localGradeEs, localReplyEs, ES_LESSON_TEMPLATES,
+          TOPIC_MAP_ES } = esEng;
+
+  // --- lessons ---
+  const service = R('src/lib/ai/service.ts');
+  ok('generateLesson dispatches to the Spanish engine', service.includes('localLessonEs'));
+  ok('gradeAnswer dispatches to the Spanish grader', service.includes('localGradeEs'));
+  ok('tutorReply dispatches to the Spanish tutor', service.includes('localReplyEs'));
+  ok('  dispatch is driven by ctx.language', /ctx\.language \?\? 'en'\) === 'es'/.test(service));
+
+  const genRoute = R('src/app/api/lessons/generate/route.ts');
+  ok('lesson route resolves templates per language', genRoute.includes('templateForTagEs'));
+
+  // A Spanish lesson must actually come back in Spanish.
+  for (const skill of ['grammar', 'vocabulary', 'speaking', 'writing', 'reading', 'listening']) {
+    const l = localLessonEs(skill, 'A2');
+    const blob = JSON.stringify(l);
+    ok(`localLessonEs(${skill}) returns Spanish content`,
+       Boolean(l.sections?.length) && Boolean(l.exercises?.length));
+    ok(`  ${skill}: not an English template`,
+       !/Past Simple Tense|Present Perfect|Articles \(a\/an\/the\)/.test(blob));
+  }
+  ok('every Spanish skill pool maps to real templates',
+     Object.values(TOPIC_MAP_ES).flat().every((k) => Boolean(ES_LESSON_TEMPLATES[k])));
+  ok('Spanish template count is reasonable',
+     Object.keys(ES_LESSON_TEMPLATES).length >= 8,
+     `${Object.keys(ES_LESSON_TEMPLATES).length}`);
+
+  // --- grading ---
+  {
+    const g = localGradeEs('Yo soy cansado y el mesa es grande.');
+    ok('localGradeEs finds Spanish errors', g.errors.length >= 2);
+    ok('  corrects the text', /estoy/i.test(g.corrected_text) && /la mesa/i.test(g.corrected_text));
+    ok('  feedback is Persian', /[\u0600-\u06FF]/.test(g.feedback_fa));
+    ok('  score drops with errors', g.score < 80);
+  }
+  {
+    const g = localGradeEs('Tengo un libro azul y me gusta mucho.');
+    ok('clean Spanish scores well', g.score >= 80 && g.is_correct, `${g.score}`);
+  }
+
+  // --- tutor ---
+  {
+    // Regression: a hash above 2^31 made `h >> 3` negative, so the
+    // follow-up lookup returned undefined and users saw "undefined".
+    let clean = true;
+    for (let i = 0; i < 400; i++) {
+      const r1 = localReplyEs(`mensaje de prueba ${i}`);
+      const r2 = esEng.localReplyEs ? r1 : r1;
+      if (/undefined/.test(r1.reply) || /undefined/.test(r1.translation_fa)) { clean = false; break; }
+      void r2;
+    }
+    ok('Spanish tutor never emits "undefined"', clean);
+  }
+  {
+    const en = engine.localReply;
+    let clean = true;
+    for (let i = 0; i < 400; i++) {
+      const r = en(`test message ${i}`, {});
+      if (/undefined/.test(r.reply) || /undefined/.test(r.translation_fa)) { clean = false; break; }
+    }
+    ok('English tutor never emits "undefined"', clean);
+  }
+  {
+    const r = localReplyEs('Hola, quiero practicar.');
+    ok('localReplyEs answers in Spanish',
+       /[¿¡]|hola|bien|genial|vale|cuentame|cont|qu[eé]/i.test(r.reply), r.reply);
+    ok('  never answers in English',
+       !/\b(the|you|what|about|tell me more)\b/i.test(r.reply), r.reply);
+    ok('  provides a Persian translation', /[\u0600-\u06FF]/.test(r.translation_fa));
+  }
+
+  // --- pronunciation engine ---
+  const { tokenize, phoneticKeyEs, scoreTranscript, keyFor } = pron;
+  ok('tokenize keeps Spanish letters',
+     tokenize('español mañana').join(' ') === 'español mañana',
+     tokenize('español mañana').join(' '));
+  ok('phoneticKeyEs treats b and v alike',
+     phoneticKeyEs('vaca') === phoneticKeyEs('baca'));
+  ok('phoneticKeyEs drops the silent h', phoneticKeyEs('hola') === phoneticKeyEs('ola'));
+  ok('keyFor switches on language',
+     keyFor('cielo', 'es') !== keyFor('cielo', 'en'));
+  {
+    const perfect = scoreTranscript('Buenos días, ¿cómo estás?', 'Buenos días, ¿cómo estás?', 'es');
+    ok('a perfect Spanish reading scores high', perfect.accuracy_score >= 90,
+       `${perfect.accuracy_score}`);
+    const wrong = scoreTranscript('Buenos días, ¿cómo estás?', 'good morning how are you', 'es');
+    ok('  an English reading of Spanish scores low', wrong.accuracy_score < 45,
+       `${wrong.accuracy_score}`);
+  }
+  {
+    // Spanish hints must be Spanish-specific, not the English set.
+    const s2 = scoreTranscript('El perro corre rápido.', 'el pero core rapido', 'es');
+    const hints = s2.words.map((w) => w.hint_fa).filter(Boolean).join(' ');
+    ok('Spanish scoring emits Spanish hints',
+       hints.includes('غلتان') || hints.includes('اسپانیایی'), hints.slice(0, 80));
+  }
+
+  const svc = R('src/lib/ai/service.ts');
+  ok('speech-to-text uses the learner language (not hardcoded en)',
+     !/language: 'en',\n\s*\/\/ Priming/.test(svc) && svc.includes('language,'));
+
+  // --- landing page ---
+  const home = R('src/app/page.tsx');
+  ok('landing page mentions Spanish', home.includes('اسپانیایی'));
+  ok('  renders both language cards', home.includes('LEARNING_LANGUAGES'));
+  const rootLayout = R('src/app/layout.tsx');
+  ok('site metadata mentions Spanish', rootLayout.includes('اسپانیایی'));
+}
+
 console.log(`\n${'='.repeat(50)}`);
 console.log(`  ✅ passed: ${pass}    ❌ failed: ${fail}`);
 console.log('='.repeat(50) + '\n');

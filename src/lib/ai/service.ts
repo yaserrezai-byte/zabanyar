@@ -23,6 +23,7 @@ import {
   type LearnerContext,
 } from './prompts';
 import { localCoach, localGrade, localLesson, localReply } from './local-engine';
+import { localGradeEs, localLessonEs, localReplyEs } from './local-engine-es';
 import {
   scoreFromDuration,
   scoreTranscript,
@@ -268,7 +269,10 @@ export async function tutorReply(
       console.error('[ai] tutorReply fallback:', err);
     }
   }
-  return { ...localReply(userText, ctx), source: 'local' };
+  // The tutor must answer in the language being learned.
+  return (ctx.language ?? 'en') === 'es'
+    ? { ...localReplyEs(userText, ctx), source: 'local' as const }
+    : { ...localReply(userText, ctx), source: 'local' as const };
 }
 
 // ------------------------------------------------------------
@@ -317,7 +321,10 @@ export async function gradeAnswer(
       console.error('[ai] gradeAnswer fallback:', err);
     }
   }
-  return { ...localGrade(text, skill), source: 'local' };
+  // Grade with the rule set of the language actually being learned.
+  return (ctx.language ?? 'en') === 'es'
+    ? { ...localGradeEs(text, skill), source: 'local' as const }
+    : { ...localGrade(text, skill), source: 'local' as const };
 }
 
 // ------------------------------------------------------------
@@ -365,7 +372,11 @@ export async function generateLesson(
       console.error('[ai] generateLesson fallback:', err);
     }
   }
-  const local = localLesson(skill, level, topic, recentTopics);
+  // Local fallback must speak the learner's target language.
+  const local =
+    (ctx.language ?? 'en') === 'es'
+      ? localLessonEs(skill, level, topic, recentTopics)
+      : localLesson(skill, level, topic, recentTopics);
   return { ...local, source: 'local' } as GeneratedLesson;
 }
 
@@ -426,19 +437,27 @@ export interface PronunciationResult extends PronunciationScore {
 export async function transcribeAndScore(
   targetText: string,
   audio: { data: Buffer; mimeType: string } | null,
-  opts: { browserTranscript?: string; durationMs?: number } = {}
+  opts: {
+    browserTranscript?: string;
+    durationMs?: number;
+    language?: LearningLanguage;
+  } = {}
 ): Promise<PronunciationResult> {
+  const language = opts.language ?? 'en';
+
   // ---- 1. server-side speech service ----
   if (SPEECH_ENABLED && audio) {
     try {
       const { text } = await transcribeAudio(audio.data, {
         mimeType: audio.mimeType,
-        language: 'en',
+        // Must match the spoken language, or Spanish audio is
+        // transcribed as (nonsense) English and always scores badly.
+        language,
         // Priming with the target improves accuracy on accented speech.
         prompt: targetText,
       });
       return {
-        ...scoreTranscript(targetText, text),
+        ...scoreTranscript(targetText, text, language),
         source: 'service',
         used_fallback: false,
       };
@@ -451,7 +470,7 @@ export async function transcribeAndScore(
   const browser = opts.browserTranscript?.trim();
   if (browser) {
     return {
-      ...scoreTranscript(targetText, browser),
+      ...scoreTranscript(targetText, browser, language),
       source: 'browser',
       used_fallback: true,
     };
@@ -459,7 +478,7 @@ export async function transcribeAndScore(
 
   // ---- 3. nothing to compare against ----
   return {
-    ...scoreFromDuration(targetText, opts.durationMs ?? 0),
+    ...scoreFromDuration(targetText, opts.durationMs ?? 0, language),
     source: 'heuristic',
     used_fallback: true,
   };

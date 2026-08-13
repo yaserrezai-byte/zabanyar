@@ -175,8 +175,8 @@ export function localReply(userText: string, ctx: LearnerContext = {}): LocalRep
   const opener = OPENERS[h % OPENERS.length];
   const openerFa = OPENER_FA[h % OPENER_FA.length];
 
-  let follow = FOLLOW_UPS[(h >> 3) % FOLLOW_UPS.length];
-  let followFa = FOLLOW_UPS_FA[(h >> 3) % FOLLOW_UPS_FA.length];
+  let follow = FOLLOW_UPS[(h >>> 3) % FOLLOW_UPS.length];
+  let followFa = FOLLOW_UPS_FA[(h >>> 3) % FOLLOW_UPS_FA.length];
 
   if (ctx.interests?.length) {
     const topic = ctx.interests[h % ctx.interests.length];
